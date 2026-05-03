@@ -1,0 +1,105 @@
+dmm-parser License
+
+Copyright (c) 2026 exodiaprivate-eng (current distribution & extensions)
+Original work © 2026 potter4208467 (Discord)
+   — incorporated with explicit permission to relicense (2026-04-27).
+
+==============================================================================
+Version applicability
+==============================================================================
+
+dmm-parser is versioned independently of the DMM (Definitive Mod Manager)
+application that consumes it. This license applies to dmm-parser version
+0.1.0 and ALL SUBSEQUENT VERSIONS, including every patch, minor release,
+major release, fork, branch, build, and binary derivative published by the
+copyright holder under the dmm-parser name (or any successor name) from
+2026-04-27 onward.
+
+This license also governs the parsing functionality embedded in, linked into,
+or otherwise consumed by the DMM (Definitive Mod Manager) application at
+DMM version 1.3.3 and ALL SUBSEQUENT DMM VERSIONS. Any code, binary, or
+behavior in DMM that originates from, is derived from, or replicates the
+functionality of dmm-parser remains under this license regardless of the
+DMM version it is bundled inside. Reverse-engineering DMM 1.3.3 or later
+to extract or reproduce that parsing functionality is a use of this software
+and is bound by the Restrictions section below.
+
+Earlier versions of this codebase, originally distributed as `crimson-rs`
+under the MIT License, remain governed by their original MIT terms for parties
+that obtained those earlier versions through legitimate channels prior to the
+relicensing date. The relicensing applies exclusively to dmm-parser version
+0.1.0 and forward; it is not retroactive against pre-fork MIT recipients, and
+it is not waivable for post-fork recipients.
+
+Anyone who acquires this software at version 0.1.0 or later — by any means,
+including but not limited to source clone, binary distribution, transitive
+dependency, redistribution, or extraction from the DMM Mod Manager binary
+(version 1.3.3 or later) — is bound by the terms below.
+
+==============================================================================
+Permitted use
+==============================================================================
+
+Permission is hereby granted, free of charge, to:
+
+  (a) The DMM mod loader project and any official DMM tooling distributed
+      under the same project umbrella.
+
+  (b) Individual persons, for personal study, experimentation, and the
+      authoring of mods consumed by the DMM mod loader.
+
+  (c) potter4208467 (the original author) and any collaborator they designate,
+      for any purpose.
+
+==============================================================================
+Restrictions
+==============================================================================
+
+Use of this software (in whole or in part, including any derived work, port,
+reimplementation, transliteration to another language, or wrapper) inside any
+other mod loader, mod manager, archive editor, save editor, or competing
+end-user tool that targets the same game data is prohibited without prior
+written consent from the copyright holder.
+
+For purposes of this license, "reimplementation" includes any independently-
+derived implementation that achieves substantial functional equivalence with
+this software, regardless of how that implementation was produced. This
+expressly includes (but is not limited to):
+
+  - Clean-room reverse engineering of this software, of any binary that
+    incorporates it, or of the DMM mod loader's parsing behavior.
+  - AI-assisted refactoring, paraphrase, or restatement of this software
+    or of any binary that incorporates it.
+  - Black-box behavioral cloning (observing outputs for given inputs and
+    matching them in a separate codebase).
+
+Functional equivalence is established by demonstrated capability to parse,
+modify, or produce the same game data formats handled by this software,
+including (but not limited to) pabgb, pabgh, paz, pamt, papgt, and the
+v3 / v4 mod formats consumed by DMM.
+
+Redistribution of the source as a standalone library, package, or crate is
+prohibited. Use of compiled artifacts is permitted only as a transitive
+dependency of the DMM mod loader or in works covered by Permitted use.
+
+==============================================================================
+Source confidentiality
+==============================================================================
+
+This software is distributed exclusively through private repositories under
+the maintainer's control. Public exposure of the source (in whole or in part,
+including snippets, decompiled binaries, screenshots of source, or summaries
+detailed enough to enable reimplementation) by any party other than the
+copyright holders is prohibited.
+
+==============================================================================
+Warranty
+==============================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

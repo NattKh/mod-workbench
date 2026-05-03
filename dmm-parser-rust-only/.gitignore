@@ -1,0 +1,36 @@
+# Rust build output
+target/
+
+# Python build artifacts
+.venv/
+python/dmm_parser/__pycache__/
+python/dmm_parser/*.so
+dist/
+
+# Game binary fixtures
+pabgb/
+*.pabgb
+*.pabgh
+*.pamt
+*.papgt
+*.paz
+
+# Output files
+out/
+
+# Tools / game files
+tools/
+node_modules/
+package.json
+package-lock.json
+
+# Claude Code local settings
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/

@@ -1,0 +1,21 @@
+[package]
+name = "dmm-parser-rust-only"
+version = "0.1.0"
+edition = "2024"
+authors = ["exodiaprivate-eng", "potter4208467 (Discord)"]
+description = "Pabgb parser for the DMM mod loader. Source-available, restricted to DMM-affiliated use."
+license-file = "LICENSE"
+
+[lib]
+name = "dmm_parser"
+crate-type = ["rlib"]
+
+[dependencies]
+chacha20_crate = { package = "chacha20", version = "0.10.0" }
+lz4_flex = "0.11"
+flate2 = "1.0"
+serde_json = "1.0"
+base64 = "0.22"
+
+[dev-dependencies]
+tempfile = "3"
