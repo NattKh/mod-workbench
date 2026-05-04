@@ -51,6 +51,44 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                 let mut want_retry = false;
                 let mut want_close = false;
                 let mut want_toggle_hex = false;
+                // Pick a hint based on the actual failure mode rather than
+                // always blaming a parser version mismatch. The three modes
+                // we see in the wild:
+                //   1. "File 'X.pabgb' not found in gamedata/binary__/..."
+                //      = the file isn't in the PAZ at all (dev-only file or
+                //      a name mismatch between dispatch and on-disk).
+                //   2. "Cannot read PAMT" / "Directory '...' not found"
+                //      = game install path or PAMT itself is wrong.
+                //   3. anything else (parse error, EOF, etc.)
+                //      = parser couldn't decode the bytes.
+                let (header_label, hint) = if msg.contains("not found in gamedata") {
+                    (
+                        "PAZ lookup failed:",
+                        "This table isn't present in your game's 0008 PAZ at the \
+                         standard internal path. Common causes: it's a dev-only \
+                         table (lives in `bin_dev/`, gated off in retail), or it \
+                         was renamed in a patch and the registry is out of date. \
+                         Other tables are unaffected — close this tab and try \
+                         another one.",
+                    )
+                } else if msg.contains("Cannot read PAMT") || msg.contains("not found in 0008") {
+                    (
+                        "Game data lookup failed:",
+                        "Couldn't read the PAMT for the 0008 PAZ group. Verify \
+                         that the configured Game Directory points at a real \
+                         Crimson Desert install (Settings → Game Dir). The PAMT \
+                         file is at `<game-dir>/0008/0.pamt`.",
+                    )
+                } else {
+                    (
+                        "Parser error:",
+                        "The parser couldn't decode this table's bytes. Most \
+                         likely cause: the table's binary layout changed in a \
+                         recent game patch. Try Show Hex to inspect the raw \
+                         pabgb. Other tables that didn't change are unaffected.",
+                    )
+                };
+
                 ui.vertical_centered(|ui| {
                     ui.add_space(20.0);
                     ui.heading(
@@ -61,7 +99,7 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                     ui.group(|ui| {
                         ui.set_max_width(700.0);
                         ui.label(
-                            egui::RichText::new("Parser error:")
+                            egui::RichText::new(header_label)
                                 .strong(),
                         );
                         ui.add(
@@ -74,14 +112,9 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                     });
                     ui.add_space(8.0);
                     ui.label(
-                        egui::RichText::new(
-                            "Most likely cause: the parser was last updated for game v1.0.5 \
-                             but this table changed in the 2026-5-1 patch. The fix is in \
-                             dmm-parser PR #11 (still open upstream). Other tables that \
-                             didn't change in the patch should still load fine.",
-                        )
-                        .color(egui::Color32::from_gray(160))
-                        .small(),
+                        egui::RichText::new(hint)
+                            .color(egui::Color32::from_gray(160))
+                            .small(),
                     );
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {

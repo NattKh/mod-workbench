@@ -168,40 +168,17 @@ pub fn export_changes_full(
 
 /// Map a dispatch name (e.g. "item_info") to its on-disk pabgb filename
 /// (e.g. "iteminfo.pabgb"). DMM addresses targets by filename, not dispatch
-/// name, so the two have to be kept in sync. Mirrors the lookup in
-/// `crate::table_registry::dispatch_name_to_pabgb_stem` plus the manual
-/// `item_info` extra.
+/// name, so this has to match what's actually packed inside the game's
+/// 0008 PAZ.
+///
+/// Delegates to [`crate::table_registry::dispatch_name_to_pabgb_stem`] —
+/// single source of truth for the mapping. Previously this function had
+/// its own copy of the special-case match, and the two drifted: 17 tables
+/// got the wrong filename here, silently failed to load, and the user
+/// saw a misleading "parser PR #11" hint. Don't restore an independent
+/// copy — extend the registry function instead.
 fn dispatch_to_pabgb_filename(dispatch: &str) -> String {
-    let stem = match dispatch {
-        "item_info" => "iteminfo",
-        "faction_info" => "faction",
-        "skill_info" => "skill",
-        "board_info" => "board",
-        "inventory_info" => "inventory",
-        "reserve_slot_info" => "reserveslot",
-        "field_revive_info" => "reviepointinfo",
-        "game_level_info" => "levelinfo",
-        "character_change_info" => "characterchange",
-        "game_event_handler_info" => "gameeventhandler",
-        "game_play_trigger_info" => "gameplaytrigger",
-        "global_game_event_info" => "globalgameevent",
-        "global_game_event_group_info" => "globalgameeventgroup",
-        "key_map_setting_list_info" => "keymap",
-        "platform_entitlement_info" => "entitlementinfo",
-        "royal_supply_info" => "royalsupply",
-        "special_mode_info" => "specialmode",
-        "ui_social_action_info" => "uisocialaction",
-        "valid_schedule_action_info" => "validscheduleaction",
-        "gimmick_gate_connection_info" => "gimmickgateconnection",
-        "bitmap_position_info" => "bitmapposition",
-        "faction_group_info" => "factiongroup",
-        "faction_node_info" => "factionnode",
-        "faction_relation_group_info" => "factionrelationgroup",
-        "faction_waypoint_info" => "factionwaypoint",
-        // Default: strip underscores
-        _ => return format!("{}.pabgb", dispatch.replace('_', "")),
-    };
-    format!("{}.pabgb", stem)
+    format!("{}.pabgb", crate::table_registry::dispatch_name_to_pabgb_stem(dispatch))
 }
 
 /// Walk a JSON object recursively and emit one (path, value) pair per leaf

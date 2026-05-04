@@ -48,8 +48,20 @@ pub fn build_registry() -> Vec<TableMeta> {
 /// Convert a dispatch name like "gimmick_info" to the pabgb file stem
 /// like "gimmickinfo". Handles known special cases where the filename
 /// diverges from the simple "remove underscores" rule.
-fn dispatch_name_to_pabgb_stem(dispatch_name: &str) -> String {
+///
+/// **CRITICAL — single source of truth.** This mapping is also exposed via
+/// [`crate::mod_io::dispatch_to_pabgb_filename`], which calls into this
+/// function so the two cannot drift. The previous arrangement had two
+/// independent copies, and 17 tables silently failed to load with
+/// "File 'X.pabgb' not found in gamedata/binary__/client/bin" because the
+/// registry produced names like `bitmappositioninfo.pabgb` that don't
+/// exist on disk (the real file is `bitmapposition.pabgb`). The pattern:
+/// most `*_info` dispatch names that map to filenames where the `info`
+/// suffix is dropped need an explicit case here, otherwise the default
+/// "strip underscores" rule produces a wrong name.
+pub fn dispatch_name_to_pabgb_stem(dispatch_name: &str) -> String {
     match dispatch_name {
+        "item_info" => "iteminfo".to_string(),
         "faction_info" => "faction".to_string(),
         "skill_info" => "skill".to_string(),
         "board_info" => "board".to_string(),
@@ -57,6 +69,23 @@ fn dispatch_name_to_pabgb_stem(dispatch_name: &str) -> String {
         "reserve_slot_info" => "reserveslot".to_string(),
         "field_revive_info" => "reviepointinfo".to_string(),
         "game_level_info" => "levelinfo".to_string(),
+        "character_change_info" => "characterchange".to_string(),
+        "game_event_handler_info" => "gameeventhandler".to_string(),
+        "game_play_trigger_info" => "gameplaytrigger".to_string(),
+        "global_game_event_info" => "globalgameevent".to_string(),
+        "global_game_event_group_info" => "globalgameeventgroup".to_string(),
+        "key_map_setting_list_info" => "keymap".to_string(),
+        "platform_entitlement_info" => "entitlementinfo".to_string(),
+        "royal_supply_info" => "royalsupply".to_string(),
+        "special_mode_info" => "specialmode".to_string(),
+        "ui_social_action_info" => "uisocialaction".to_string(),
+        "valid_schedule_action_info" => "validscheduleaction".to_string(),
+        "gimmick_gate_connection_info" => "gimmickgateconnection".to_string(),
+        "bitmap_position_info" => "bitmapposition".to_string(),
+        "faction_group_info" => "factiongroup".to_string(),
+        "faction_node_info" => "factionnode".to_string(),
+        "faction_relation_group_info" => "factionrelationgroup".to_string(),
+        "faction_waypoint_info" => "factionwaypoint".to_string(),
         _ => dispatch_name.replace('_', ""),
     }
 }
