@@ -443,8 +443,10 @@ impl eframe::App for WorkbenchApp {
                         if ui
                             .button("As Field JSON v3...")
                             .on_hover_text(
-                                "Single .json file with format=3 + intents \
-                                 array, the schema DMM 1.3.x ingests.",
+                                "Single self-contained .json file with \
+                                 modinfo + format=3 + targets[], the schema \
+                                 DMM 1.3.3+ ingests. Drop into DMM's mods \
+                                 folder.",
                             )
                             .clicked()
                         {
@@ -1481,38 +1483,43 @@ impl WorkbenchApp {
             None => return,
         };
         let dispatch_name = active.dispatch_name.clone();
-        let folder = match rfd::FileDialog::new()
-            .set_title("Pick DMM Mods Directory (a new subfolder will be created)")
-            .pick_folder()
-        {
-            Some(p) => p,
-            None => return,
-        };
-        let mod_name = if !self.state.metadata_dialog.metadata.name.is_empty() {
+
+        // Default filename uses the metadata name if set, falling back to
+        // the dispatch name. DMM identifies mods by the file basename so
+        // a meaningful default saves the user a rename round-trip.
+        let default_basename = if !self.state.metadata_dialog.metadata.name.is_empty() {
             sanitize_folder(&self.state.metadata_dialog.metadata.name)
         } else {
             sanitize_folder(&dispatch_name)
         };
-        let out_dir = folder.join(&mod_name);
+
+        let path = match rfd::FileDialog::new()
+            .set_title("Export DMM v3 Intent JSON")
+            .add_filter("JSON", &["json"])
+            .set_file_name(format!("{}.json", default_basename))
+            .save_file()
+        {
+            Some(p) => p,
+            None => return,
+        };
 
         let active = self.state.active_table().unwrap();
         let metadata = self.state.metadata_dialog.metadata.clone();
         let change_count = active.changes.change_count();
-        let result = crate::mod_package::export_dmm_full(
+        let result = crate::mod_package::export_dmm_v3_json(
             &metadata,
             &active.dispatch_name,
             &active.entries,
             &active.vanilla,
             &active.changes,
-            Some(&self.state.notes),
-            &out_dir,
+            &path,
         );
         match result {
             Ok(()) => {
                 let msg = format!(
                     "Exported {} changes to {}",
                     change_count,
-                    out_dir.display()
+                    path.display()
                 );
                 self.state.status = msg.clone();
                 self.state.toasts.info(msg);
@@ -1520,8 +1527,8 @@ impl WorkbenchApp {
             Err(e) => {
                 self.state.status = format!("Write error: {}", e);
                 self.state.toasts.error_with_details(
-                    "Failed to write DMM bundle",
-                    format!("{}\nPath: {}", e, out_dir.display()),
+                    "Failed to write DMM v3 JSON",
+                    format!("{}\nPath: {}", e, path.display()),
                 );
             }
         }

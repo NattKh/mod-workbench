@@ -158,81 +158,26 @@ pub fn export_modpkg_full(
     Ok(())
 }
 
-/// Export as a DMM-compatible mod folder. Layout:
+/// Export as a DMM v3 Intent JSON — single self-contained `.json` file
+/// with embedded `modinfo` + `format: 3` + `targets[]`. This is the shape
+/// DMM 1.3.3+ ingests directly (drop the file into DMM's mods folder and
+/// it loads).
 ///
-/// ```text
-/// <out_dir>/
-///   mod.json         <- v3 field JSON (DMM ingests `format: "crimson_field_json_v3"`)
-///   metadata.json    <- DMM-style metadata sidecar (name/author/version/description/nexus_url)
-///   README.md        <- same auto-generated readme as .modpkg for portability
-/// ```
-///
-/// The output directory is created if it doesn't already exist. The folder
-/// name itself is up to the caller — DMM treats every subfolder of its
-/// mods directory as a mod, so the natural pattern is to pass
-/// `<dmm-mods-dir>/<mod-name>/` here.
-pub fn export_dmm(
+/// The whole mod (metadata + intents) lives in one file by design — older
+/// shapes that split into `mod.json` + `metadata.json` + `README.md`
+/// folders were rejected by DMM, so we no longer produce those.
+pub fn export_dmm_v3_json(
     metadata: &ModMetadata,
     table: &str,
     entries: &[Value],
     vanilla: &[Value],
     changes: &ChangeTracker,
-    out_dir: &Path,
+    out_path: &Path,
 ) -> io::Result<()> {
-    export_dmm_full(metadata, table, entries, vanilla, changes, None, out_dir)
-}
-
-/// Variant of [`export_dmm`] that also embeds per-entry notes from `notes`
-/// (when present) into the bundled `mod.json`.
-pub fn export_dmm_full(
-    metadata: &ModMetadata,
-    table: &str,
-    entries: &[Value],
-    vanilla: &[Value],
-    changes: &ChangeTracker,
-    _notes: Option<&NoteStore>,
-    out_dir: &Path,
-) -> io::Result<()> {
-    std::fs::create_dir_all(out_dir)?;
-
-    // CRITICAL: DMM does NOT understand `crimson_field_json_v3`. It expects
-    // `format: 3` (u32) with intent-based ops. We use [`export_dmm_v3`] to
-    // produce a real DMM-compatible payload. Notes are intentionally not
-    // embedded here — the DMM intent format has no slot for them, and
-    // shipping them inline as `_notes` would be invisible to DMM but visible
-    // to anyone who opens the file.
     let mod_value = export_dmm_v3(table, entries, vanilla, changes, Some(metadata));
-    let mod_json = serde_json::to_string_pretty(&mod_value)
+    let pretty = serde_json::to_string_pretty(&mod_value)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-    std::fs::write(out_dir.join("mod.json"), mod_json)?;
-
-    let change_count = mod_value
-        .get("intents")
-        .and_then(|v| v.as_array())
-        .map(|a| a.len())
-        .unwrap_or(0);
-
-    // DMM-style metadata sidecar: similar shape to mod.json's `_meta` but
-    // top-level so DMM doesn't have to know the v3 JSON layout to surface
-    // attribution + version in its own UI.
-    let metadata_json = json!({
-        "name": metadata.name,
-        "author": metadata.author,
-        "version": metadata.version,
-        "description": metadata.description,
-        "nexus_url": metadata.nexus_url,
-        "dependencies": metadata.dependencies,
-        "table": table,
-        "entry_count": change_count,
-    });
-    let metadata_str = serde_json::to_string_pretty(&metadata_json)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-    std::fs::write(out_dir.join("metadata.json"), metadata_str)?;
-
-    let readme = build_readme(metadata, table, change_count);
-    std::fs::write(out_dir.join("README.md"), readme)?;
-
-    Ok(())
+    std::fs::write(out_path, pretty)
 }
 
 /// Build a Markdown README from metadata + change summary. Always returns
@@ -565,31 +510,35 @@ mod tests {
     }
 
     #[test]
-    fn test_export_dmm_writes_three_sidecars() {
+    fn test_export_dmm_v3_json_writes_single_file_with_modinfo_and_targets() {
         let dir = tempdir();
         let (entries, vanilla, changes) = sample_inputs();
         let meta = ModMetadata {
             name: "DmmMod".into(),
             author: "Me".into(),
+            version: "1.0".into(),
+            description: "test".into(),
             ..Default::default()
         };
-        let out = dir.join("MyMod");
-        export_dmm(&meta, "item_info", &entries, &vanilla, &changes, &out).unwrap();
-        assert!(out.join("mod.json").exists());
-        assert!(out.join("metadata.json").exists());
-        assert!(out.join("README.md").exists());
+        let out = dir.join("MyMod.json");
+        export_dmm_v3_json(&meta, "item_info", &entries, &vanilla, &changes, &out).unwrap();
+        assert!(out.is_file(), "should be a single file, not a directory");
 
-        // mod.json should be the DMM v3 intent format (format=3, target,
-        // intents) — NOT our workbench-native crimson_field_json_v3.
-        let mod_raw = std::fs::read_to_string(out.join("mod.json")).unwrap();
-        let mod_val: Value = serde_json::from_str(&mod_raw).unwrap();
-        assert_eq!(mod_val["format"], 3, "DMM bundle must use format=3 (u32)");
-        assert_eq!(mod_val["target"], "iteminfo.pabgb");
-        assert!(mod_val["intents"].is_array(), "must have intents array");
+        let raw = std::fs::read_to_string(&out).unwrap();
+        let val: Value = serde_json::from_str(&raw).unwrap();
 
-        let metadata_raw = std::fs::read_to_string(out.join("metadata.json")).unwrap();
-        let metadata_val: Value = serde_json::from_str(&metadata_raw).unwrap();
-        assert_eq!(metadata_val["name"], "DmmMod");
+        // DMM 1.3.3+ shape: modinfo + format + targets[].
+        assert_eq!(val["format"], 3, "format must be u32 = 3");
+        assert_eq!(val["modinfo"]["title"], "DmmMod");
+        assert_eq!(val["modinfo"]["author"], "Me");
+        assert_eq!(val["modinfo"]["version"], "1.0");
+        assert_eq!(val["modinfo"]["description"], "test");
+        assert!(val["modinfo"]["note"].is_string());
+
+        let targets = val["targets"].as_array().expect("targets must be array");
+        assert_eq!(targets.len(), 1, "single-table export emits one target");
+        assert_eq!(targets[0]["file"], "iteminfo.pabgb");
+        assert!(targets[0]["intents"].is_array(), "must have intents array");
     }
 
     #[test]

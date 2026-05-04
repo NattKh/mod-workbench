@@ -294,10 +294,36 @@ pub fn analyze(mods: Vec<LoadedMod>) -> ConflictReport {
 
 // ── Format-specific normalizers ────────────────────────────────────────────
 
-/// Extract `(name, author, version)` from optional `_meta` block, falling
-/// back to `default_name` for the display label so the UI never renders an
-/// empty cell.
+/// Extract `(name, author, version)` from the file's metadata block,
+/// falling back to `default_name` so the UI never renders an empty cell.
+///
+/// Two shapes are accepted:
+/// - `_meta` with `name/author/version` — workbench-native v3 exports.
+/// - `modinfo` with `title/author/version` — DMM 1.3.3+ exports (our own
+///   new DMM v3 output uses this shape).
 fn extract_meta(root: &Value, default_name: &str) -> (String, Option<String>, Option<String>) {
+    // Prefer `modinfo` (DMM-style) when present, fall back to `_meta`
+    // (workbench-native). DMM uses `title` for the display name.
+    if let Some(modinfo) = root.get("modinfo").and_then(|v| v.as_object()) {
+        let name = modinfo
+            .get("title")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .unwrap_or_else(|| default_name.to_string());
+        let author = modinfo
+            .get("author")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(String::from);
+        let version = modinfo
+            .get("version")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(String::from);
+        return (name, author, version);
+    }
+
     let meta = root.get("_meta").and_then(|v| v.as_object());
     let name = meta
         .and_then(|m| m.get("name"))

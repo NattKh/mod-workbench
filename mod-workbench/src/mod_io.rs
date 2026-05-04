@@ -230,28 +230,38 @@ fn flatten_leaves(prefix: &str, value: &Value, out: &mut Vec<(String, Value)>) {
     }
 }
 
-/// Export changes in **DMM v3 intent format** — what the Definitive Mod
-/// Manager actually understands. This is the format you should use for any
-/// mod that needs to be loaded by DMM 1.3.x.
+/// Export changes in **DMM v3 intent format** — the schema DMM 1.3.3+
+/// ingests. Single self-contained `.json` file with embedded modinfo and
+/// a multi-target `targets` array.
 ///
-/// Output shape (single-target):
+/// Output shape:
 /// ```json
 /// {
+///   "modinfo": {
+///     "title": "...",
+///     "version": "...",
+///     "author": "...",
+///     "description": "...",
+///     "note": "..."
+///   },
 ///   "format": 3,
-///   "_meta": { ... optional metadata ... },
-///   "target": "iteminfo.pabgb",
-///   "intents": [
-///     { "entry": "Item_Foo", "key": 1234, "field": "cooltime",
-///       "op": "set", "new": 5 }
+///   "targets": [
+///     {
+///       "file": "iteminfo.pabgb",
+///       "intents": [
+///         { "entry": "Item_Foo", "key": 1234, "field": "cooltime",
+///           "op": "set", "new": 5 }
+///       ]
+///     }
 ///   ]
 /// }
 /// ```
 ///
-/// Why we needed a second exporter: the `crimson_field_json_v3` shape we
-/// emit by default is workbench-native and uses `format` as a STRING, plus
-/// nests changes under `entries[].fields`. DMM rejects it because it expects
-/// `format: 3` (u32) and per-field `intents`. See conflict.rs for the dual
-/// importer that accepts both.
+/// Why this shape: matches what real-world DMM mods (e.g. SuperMegaMod)
+/// look like on disk. Older shapes (`_meta`, single `target` string,
+/// nested `entries[].fields`) all get rejected by DMM 1.3.3's parser.
+/// `targets` stays an array even with one file so multi-target mods work
+/// the same way without a special path.
 pub fn export_dmm_v3(
     dispatch_name: &str,
     entries: &[Value],
@@ -259,7 +269,7 @@ pub fn export_dmm_v3(
     changes: &ChangeTracker,
     metadata: Option<&ModMetadata>,
 ) -> Value {
-    let target = dispatch_to_pabgb_filename(dispatch_name);
+    let target_file = dispatch_to_pabgb_filename(dispatch_name);
 
     let mut intents: Vec<Value> = Vec::new();
     for (i, entry) in entries.iter().enumerate() {
@@ -274,8 +284,9 @@ pub fn export_dmm_v3(
         }
 
         // Use string_key as the human-readable "entry" name when present —
-        // DMM uses this for log output. Numeric `key` is the actual lookup
-        // identifier so it's always included.
+        // DMM logs this. Empty string is fine when the entry has no string
+        // key (matches the SuperMegaMod reference shape, which always emits
+        // the field even when empty).
         let entry_name = entry
             .get("string_key")
             .and_then(|v| v.as_str())
@@ -288,9 +299,7 @@ pub fn export_dmm_v3(
             flatten_leaves(field_name, new_value, &mut leaves);
             for (path, value) in leaves {
                 let mut intent = serde_json::Map::new();
-                if !entry_name.is_empty() {
-                    intent.insert("entry".into(), Value::String(entry_name.clone()));
-                }
+                intent.insert("entry".into(), Value::String(entry_name.clone()));
                 intent.insert("key".into(), Value::from(key));
                 intent.insert("field".into(), Value::String(path));
                 intent.insert("op".into(), Value::String("set".into()));
@@ -301,17 +310,39 @@ pub fn export_dmm_v3(
     }
 
     let mut root = serde_json::Map::new();
+    root.insert("modinfo".into(), Value::Object(build_modinfo(metadata)));
     root.insert("format".into(), Value::from(3u32));
-    if let Some(meta) = metadata {
-        if !meta.is_empty() {
-            if let Ok(meta_value) = serde_json::to_value(meta) {
-                root.insert("_meta".into(), meta_value);
-            }
-        }
-    }
-    root.insert("target".into(), Value::String(target));
-    root.insert("intents".into(), Value::Array(intents));
+
+    let mut target_obj = serde_json::Map::new();
+    target_obj.insert("file".into(), Value::String(target_file));
+    target_obj.insert("intents".into(), Value::Array(intents));
+    root.insert("targets".into(), Value::Array(vec![Value::Object(target_obj)]));
+
     Value::Object(root)
+}
+
+/// Build the `modinfo` block DMM 1.3.3+ expects at the top of the file.
+///
+/// Maps the workbench's [`ModMetadata`] onto DMM's field names:
+/// `name`→`title`, others 1:1. Always emits all five fields (empty string
+/// when unset) so DMM's parser sees a stable shape.
+fn build_modinfo(metadata: Option<&ModMetadata>) -> Map<String, Value> {
+    let mut modinfo = Map::new();
+    let (title, version, author, description) = match metadata {
+        Some(m) => (
+            m.name.clone(),
+            m.version.clone(),
+            m.author.clone(),
+            m.description.clone(),
+        ),
+        None => (String::new(), String::new(), String::new(), String::new()),
+    };
+    modinfo.insert("title".into(), Value::String(title));
+    modinfo.insert("version".into(), Value::String(version));
+    modinfo.insert("author".into(), Value::String(author));
+    modinfo.insert("description".into(), Value::String(description));
+    modinfo.insert("note".into(), Value::String(String::new()));
+    modinfo
 }
 
 /// Read embedded notes back out of a mod JSON, scoped to `table_name`.

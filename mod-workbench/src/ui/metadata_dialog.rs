@@ -35,8 +35,9 @@ pub enum ExportAction {
     /// `.modpkg` zip via [`crate::mod_package::export_modpkg`].
     /// Deprecated — kept for backwards compatibility with older releases.
     SaveModpkg,
-    /// DMM v3 intent JSON file via [`crate::mod_package::export_dmm`].
-    /// Single .json with `format: 3` (u32) and an `intents` array.
+    /// DMM v3 intent JSON file via [`crate::mod_package::export_dmm_v3_json`].
+    /// Single self-contained .json with `modinfo` + `format: 3` + `targets[]`,
+    /// the shape DMM 1.3.3+ ingests.
     SaveDmm,
     /// PAZ overlay folder mod via [`crate::mod_package::export_paz_mod_folder`].
     /// What DMM/Stacker actually want for "folder mods" — recommended.
