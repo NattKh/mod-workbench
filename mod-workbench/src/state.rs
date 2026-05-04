@@ -18,6 +18,7 @@ use crate::ui::command_palette::CommandPalette;
 use crate::ui::metadata_dialog::MetadataDialog;
 use crate::ui::paseq_panel::PaseqSession;
 use crate::ui::templates_panel::TemplatesPanelState;
+use crate::ui::xml_panel::XmlSession;
 use crate::validation::LintFinding;
 use crate::wizards::Wizard;
 use crate::worker;
@@ -47,6 +48,10 @@ use crate::worker;
 /// `Wizards` shows the wizards picker
 /// ([`crate::ui::wizards_panel`]) — step-by-step guided flows that compose
 /// existing primitives into one-click user tasks.
+/// `Xml` shows the XML patcher ([`crate::ui::xml_panel`]) for game configs
+/// stored as plain XML inside PAZ archives. Loads a target file, runs a
+/// list of slash-path-addressed mutation ops, and previews / saves /
+/// deploys the result.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MainView {
     PabgbTables,
@@ -59,6 +64,7 @@ pub enum MainView {
     Library,
     Templates,
     Wizards,
+    Xml,
 }
 
 pub struct AppState {
@@ -145,6 +151,13 @@ pub struct AppState {
     /// and is waiting on the user to confirm "deploy anyway". The deploy
     /// confirmation modal in `app.rs` reads this flag to render itself.
     pub deploy_confirm_pending: bool,
+    /// Set true after a successful deploy. Drives the post-deploy follow-up
+    /// modal which offers Start Game / Restore Vanilla / OK so the user can
+    /// chain test → see → revert without leaving the workbench. Cleared
+    /// when the user clicks any of the three buttons (or the X close).
+    /// Carries the overlay group that was just deployed so Restore knows
+    /// which one to wipe.
+    pub deploy_followup_modal: Option<DeployFollowup>,
     /// Two-step confirmation flag for the keyboard-triggered restore action
     /// (Ctrl+R). When true, the app shows a small modal asking the user to
     /// confirm before wiping the overlay group. Cleared when the user
@@ -213,6 +226,9 @@ pub struct AppState {
     /// catalog's `lookup_string` while this is missing so the UI degrades
     /// gracefully rather than refusing to render hash references.
     pub localization: Option<Localization>,
+    /// Persistent state for the XML patcher view ([`crate::ui::xml_panel`]).
+    /// Single-document — only one patch is open at a time.
+    pub xml: XmlSession,
 }
 
 #[derive(Clone)]
@@ -220,6 +236,20 @@ pub struct TableMeta {
     pub dispatch_name: String,
     pub pabgb_filename: String,
     pub pabgh_filename: Option<String>,
+}
+
+/// Result of a successful deploy, used by the post-deploy follow-up modal
+/// to drive the Quick Test workflow (start game, restore vanilla, or
+/// dismiss). Stored on [`AppState::deploy_followup_modal`] for the duration
+/// the modal is on screen.
+#[derive(Clone, Debug)]
+pub struct DeployFollowup {
+    /// The dispatch name that was just deployed (e.g. "item_info"). Shown
+    /// in the modal header for context.
+    pub dispatch_name: String,
+    /// The overlay group that was created (e.g. "0058"). Restore Vanilla
+    /// uses this to know which group to wipe.
+    pub overlay_group: String,
 }
 
 /// Per-tab load state. A tab can be in one of three phases:
@@ -264,6 +294,18 @@ pub struct ActiveTable {
     /// Per-tab undo/redo log. Edits made on this tab don't pollute the
     /// history of any other open tab.
     pub history: EditHistory,
+    /// Raw pabgb bytes captured during load, used as the source for the
+    /// hex viewer fallback. Populated for both successful loads and
+    /// parser failures so the user can still inspect the bytes when the
+    /// schema is broken. `None` while a load is still in flight.
+    pub raw_pabgb: Option<Vec<u8>>,
+    /// Whether the entry table should be replaced by the hex viewer for
+    /// this tab. Toggled by the "Hex" button in the entry-table top bar
+    /// and the error-state action row.
+    pub show_hex_view: bool,
+    /// Persistent hex viewer state (page, page size, selected offset).
+    /// Lives on the tab so each tab keeps its own scroll position.
+    pub hex_view_state: crate::ui::hex_view::HexViewState,
 }
 
 impl ActiveTable {
@@ -288,6 +330,9 @@ impl ActiveTable {
             selected_entry_idx: None,
             changes: ChangeTracker::new(),
             history: EditHistory::default(),
+            raw_pabgb: None,
+            show_hex_view: false,
+            hex_view_state: crate::ui::hex_view::HexViewState::default(),
         }
     }
 
@@ -309,6 +354,9 @@ impl ActiveTable {
             selected_entry_idx: None,
             changes: ChangeTracker::new(),
             history: EditHistory::default(),
+            raw_pabgb: None,
+            show_hex_view: false,
+            hex_view_state: crate::ui::hex_view::HexViewState::default(),
         }
     }
 
@@ -328,6 +376,9 @@ impl ActiveTable {
             selected_entry_idx: None,
             changes: ChangeTracker::new(),
             history: EditHistory::default(),
+            raw_pabgb: None,
+            show_hex_view: false,
+            hex_view_state: crate::ui::hex_view::HexViewState::default(),
         }
     }
 }
@@ -413,6 +464,7 @@ impl AppState {
             conflict_report: None,
             lint_findings: Vec::new(),
             deploy_confirm_pending: false,
+            deploy_followup_modal: None,
             restore_confirm_pending: false,
             command_palette: CommandPalette::default(),
             notes: NoteStore::default(),
@@ -437,6 +489,7 @@ impl AppState {
             active_wizard: None,
             cjk_report_pending: None,
             localization: cached_localization,
+            xml: XmlSession::default(),
         }
     }
 

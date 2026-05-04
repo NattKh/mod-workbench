@@ -14,6 +14,32 @@ fn describe_history_path(path: &str) -> String {
     }
 }
 
+/// Launch the Crimson Desert game executable.
+///
+/// Resolves `<game_dir>/bin64/CrimsonDesert.exe` and spawns it with
+/// `bin64/` as the working directory — the launcher's own DLL search path
+/// breaks if you run it from anywhere else. The spawn is fire-and-forget
+/// (we don't wait for the process), so the caller can return to the UI
+/// immediately.
+///
+/// Errors out with `NotFound` when the executable is missing — typically
+/// means the wrong directory was set as `game_dir`, or the user pointed at
+/// the install root instead of the game folder.
+fn launch_game(game_dir: &std::path::Path) -> std::io::Result<()> {
+    let bin64 = game_dir.join("bin64");
+    let exe = bin64.join("CrimsonDesert.exe");
+    if !exe.exists() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("Game executable not found: {}", exe.display()),
+        ));
+    }
+    std::process::Command::new(&exe)
+        .current_dir(&bin64)
+        .spawn()?;
+    Ok(())
+}
+
 /// Replace characters that can't appear in a Windows or POSIX directory
 /// name with underscores. Used by `action_export_dmm` to derive a subfolder
 /// name from the user-supplied mod name without forcing the user to think
@@ -393,23 +419,35 @@ impl eframe::App for WorkbenchApp {
                         self.action_import_mod();
                     }
 
-                    // Export submenu — three flavours, one for each
-                    // shipping format. All three share the metadata dialog
-                    // before the user picks an output path.
+                    // Export — exactly two formats, both DMM-compatible. The
+                    // workbench-native JSON and .modpkg zip were stripped
+                    // because no downstream loader (DMM, Stacker, in-game
+                    // overlay) actually consumes them.
                     ui.menu_button("Export Mod", |ui| {
-                        if ui.button("As JSON...").clicked() {
+                        if ui
+                            .button("As Mod Folder...")
+                            .on_hover_text(
+                                "Builds a PAZ overlay folder mod \
+                                 (<name>/0036/0.paz + 0.pamt + modinfo.json). \
+                                 Drop the resulting folder into DMM's mods \
+                                 directory or copy <group>/ straight into the \
+                                 game install.",
+                            )
+                            .clicked()
+                        {
                             ui.close_menu();
                             self.begin_export_flow(
-                                ui::metadata_dialog::ExportAction::SaveJson,
+                                ui::metadata_dialog::ExportAction::SaveDmmModFolder,
                             );
                         }
-                        if ui.button("As .modpkg...").clicked() {
-                            ui.close_menu();
-                            self.begin_export_flow(
-                                ui::metadata_dialog::ExportAction::SaveModpkg,
-                            );
-                        }
-                        if ui.button("As DMM bundle...").clicked() {
+                        if ui
+                            .button("As Field JSON v3...")
+                            .on_hover_text(
+                                "Single .json file with format=3 + intents \
+                                 array, the schema DMM 1.3.x ingests.",
+                            )
+                            .clicked()
+                        {
                             ui.close_menu();
                             self.begin_export_flow(
                                 ui::metadata_dialog::ExportAction::SaveDmm,
@@ -419,14 +457,44 @@ impl eframe::App for WorkbenchApp {
 
                     ui.separator();
 
-                    if ui.button("Deploy to Game").clicked() {
+                    if ui
+                        .button("Apply to Game (Quick Test)")
+                        .on_hover_text(
+                            "Pack the active table as a PAZ overlay, copy it \
+                             into the game directory, and update the PAPGT. \
+                             Used for quick iteration: edit → apply → start \
+                             game → see the change.",
+                        )
+                        .clicked()
+                    {
                         ui.close_menu();
                         self.action_deploy();
                     }
 
-                    if ui.button("Restore").clicked() {
+                    if ui
+                        .button("Remove Overlay (Restore Vanilla)")
+                        .on_hover_text(
+                            "Delete the overlay directory from the game and \
+                             remove its entry from PAPGT in one go. Brings \
+                             the game back to vanilla state for this overlay \
+                             group.",
+                        )
+                        .clicked()
+                    {
                         ui.close_menu();
                         self.action_restore();
+                    }
+
+                    if ui
+                        .button("Start Game")
+                        .on_hover_text(
+                            "Launch CrimsonDesert.exe from the configured \
+                             game directory.",
+                        )
+                        .clicked()
+                    {
+                        ui.close_menu();
+                        self.action_start_game();
                     }
 
                     ui.separator();
@@ -556,6 +624,19 @@ impl eframe::App for WorkbenchApp {
                         self.state.main_view = MainView::Wizards;
                         ui.close_menu();
                     }
+                    let mut is_xml = matches!(self.state.main_view, MainView::Xml);
+                    if ui
+                        .checkbox(&mut is_xml, "XML Patcher")
+                        .on_hover_text(
+                            "Apply slash-path patches (set_text / set_attr / \
+                             append_child) to XML game configs. Save patches as \
+                             JSON for sharing.",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::Xml;
+                        ui.close_menu();
+                    }
                     let mut is_library =
                         matches!(self.state.main_view, MainView::Library);
                     if ui
@@ -616,10 +697,19 @@ impl eframe::App for WorkbenchApp {
             });
         });
 
-        // Bottom status bar
-        egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
-            ui::bottom_bar::show(ui, &self.state);
-        });
+        // Bottom status bar — also exposes Apply / Remove / Start Game
+        // quick-action buttons on the right edge. Returns the user's click,
+        // we dispatch through the same handlers the File menu uses.
+        let bottom_action = egui::TopBottomPanel::bottom("status_bar")
+            .show(ctx, |ui| ui::bottom_bar::show(ui, &self.state))
+            .inner;
+        if let Some(action) = bottom_action {
+            match action {
+                ui::bottom_bar::BottomBarAction::Apply => self.action_deploy(),
+                ui::bottom_bar::BottomBarAction::Remove => self.action_restore(),
+                ui::bottom_bar::BottomBarAction::StartGame => self.action_start_game(),
+            }
+        }
 
         // Side panels are PABGB-specific (table list / field editor / xref).
         // Skip them entirely in the PALOC and PASEQ views so the editor takes
@@ -729,6 +819,9 @@ impl eframe::App for WorkbenchApp {
             MainView::Wizards => {
                 ui::wizards_panel::show(ui, &mut self.state);
             }
+            MainView::Xml => {
+                ui::xml_panel::show(ui, &mut self.state);
+            }
         });
 
         // Apply any deferred lint-panel action.
@@ -756,6 +849,13 @@ impl eframe::App for WorkbenchApp {
         // click-driven flow uninterrupted.
         if self.state.restore_confirm_pending {
             self.render_restore_confirm_modal(ctx);
+        }
+
+        // Post-deploy follow-up modal: shown after every successful deploy
+        // so the user can chain Start Game → test → Restore Vanilla without
+        // re-navigating the menus. Drives the Quick Test workflow.
+        if self.state.deploy_followup_modal.is_some() {
+            self.render_deploy_followup_modal(ctx);
         }
 
         // Metadata dialog: rendered after the central panel so the modal
@@ -801,6 +901,7 @@ impl WorkbenchApp {
             worker::Reply::TableLoaded {
                 dispatch_name,
                 result,
+                raw_pabgb,
             } => match result {
                 Ok(payload) => {
                     // The worker already cloned vanilla and detected columns
@@ -834,6 +935,7 @@ impl WorkbenchApp {
                         column_names,
                     );
                     tab.selected_entry_idx = xref_target_idx;
+                    tab.raw_pabgb = raw_pabgb;
                     if let Some(idx) = self
                         .state
                         .open_tabs
@@ -877,10 +979,14 @@ impl WorkbenchApp {
                     // error placeholder so the user sees the failure
                     // inline in the tab strip + central panel — no need
                     // to read toasts to understand what happened.
-                    let error_tab = crate::state::ActiveTable::placeholder_error(
+                    let mut error_tab = crate::state::ActiveTable::placeholder_error(
                         dispatch_name.clone(),
                         e.clone(),
                     );
+                    // Carry through the raw bytes (if we managed to read
+                    // them before the parser failed) so the hex viewer
+                    // fallback can still populate.
+                    error_tab.raw_pabgb = raw_pabgb;
                     if let Some(idx) = self
                         .state
                         .open_tabs
@@ -1258,6 +1364,9 @@ impl WorkbenchApp {
                 ui::metadata_dialog::ExportAction::SaveJson => self.action_export_v3_json(),
                 ui::metadata_dialog::ExportAction::SaveModpkg => self.action_export_modpkg(),
                 ui::metadata_dialog::ExportAction::SaveDmm => self.action_export_dmm(),
+                ui::metadata_dialog::ExportAction::SaveDmmModFolder => {
+                    self.action_export_dmm_mod_folder()
+                }
             },
         }
     }
@@ -1418,6 +1527,167 @@ impl WorkbenchApp {
         }
     }
 
+    /// Export as a PAZ-overlay DMM Mod Folder. This is what DMM/Stacker
+    /// actually want when loading folder mods — single-file Intent JSON
+    /// (`action_export_dmm`) is also DMM-compatible but limited to fields
+    /// the parser understands. The folder mod is full-fidelity: serialised
+    /// pabgb + vanilla pabgh, packed as a real PAZ overlay so the game
+    /// loads it the same way it loads the original archives.
+    ///
+    /// Flow:
+    ///   1. Pick a parent directory (rfd folder picker).
+    ///   2. Pick a mod folder name (rfd's `set_file_name` sweetens this —
+    ///      we reuse the metadata dialog's "name" field as the default,
+    ///      falling back to the dispatch name).
+    ///   3. Default overlay group is `0036` per buffs_v319.py convention.
+    ///      Could be made configurable in the future via metadata.dialog.
+    ///   4. Calls [`crate::mod_package::export_paz_mod_folder`] which writes
+    ///      `<parent>/<mod_name>/<group>/0.paz + 0.pamt + modinfo.json`.
+    ///   5. On success: toast + open Explorer to the new folder.
+    fn action_export_dmm_mod_folder(&mut self) {
+        // Need the active table's dispatch name + meta entry. Fast-path
+        // bail if no table is loaded so the user gets a clear error
+        // instead of a half-attempted export.
+        let active = match self.state.active_table() {
+            Some(t) => t,
+            None => {
+                self.state.toasts.warn("No table loaded — load a table first");
+                return;
+            }
+        };
+        let dispatch_name = active.dispatch_name.clone();
+
+        // PAZ packing requires the original 0008/0.pamt for encrypt_info,
+        // so we need a valid game_dir up front.
+        let game_dir = match self.state.game_dir.clone() {
+            Some(d) => d,
+            None => {
+                self.state.toasts.warn(
+                    "Set the game directory first (File → Set Game Dir...) — \
+                     export needs to read the original PAMT for encrypt_info.",
+                );
+                return;
+            }
+        };
+
+        // Look up the TableMeta entry so we know the pabgb/pabgh filenames.
+        let meta = match self
+            .state
+            .tables
+            .iter()
+            .find(|m| m.dispatch_name == dispatch_name)
+            .cloned()
+        {
+            Some(m) => m,
+            None => {
+                self.state
+                    .toasts
+                    .error("Internal error: table meta not found");
+                return;
+            }
+        };
+
+        // 1. Pick parent directory.
+        let parent_dir = match rfd::FileDialog::new()
+            .set_title("Pick where to save the folder mod (a new subfolder will be created)")
+            .pick_folder()
+        {
+            Some(p) => p,
+            None => return,
+        };
+
+        // 2. Default mod name from metadata.name or dispatch_name. We open
+        //    a `save_file`-style dialog so the user can confirm/rename
+        //    without having to type into a separate egui prompt.
+        let default_name = if !self.state.metadata_dialog.metadata.name.is_empty() {
+            sanitize_folder(&self.state.metadata_dialog.metadata.name)
+        } else {
+            sanitize_folder(&dispatch_name)
+        };
+
+        // 3. Default overlay group. 0036 matches buffs_v319.py convention
+        //    so any third-party loader's per-group remapping rules continue
+        //    to apply. TODO: make configurable per-table.
+        let overlay_group = "0036";
+
+        // 4. Run the export.
+        let active = self.state.active_table().unwrap();
+        let metadata = self.state.metadata_dialog.metadata.clone();
+        let change_count = active.changes.change_count();
+        let entries = active.entries.clone();
+        let result = crate::mod_package::export_paz_mod_folder(
+            &metadata,
+            &dispatch_name,
+            &meta,
+            &entries,
+            &game_dir,
+            overlay_group,
+            &parent_dir,
+            &default_name,
+        );
+
+        match result {
+            Ok(mod_root) => {
+                let msg = format!(
+                    "Exported {} change(s) as DMM Mod Folder: {}",
+                    change_count,
+                    mod_root.display()
+                );
+                self.state.status = msg.clone();
+                self.state.toasts.info(msg);
+                // 5. Open Explorer at the new folder. Failure here is
+                //    cosmetic — the export already succeeded — so we just
+                //    log and move on.
+                #[cfg(target_os = "windows")]
+                {
+                    if let Err(e) = std::process::Command::new("explorer")
+                        .arg(&mod_root)
+                        .spawn()
+                    {
+                        eprintln!("explorer launch failed: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                let parent_display = parent_dir.display().to_string();
+                self.state.status = format!("Export error: {}", e);
+                self.state.toasts.error_with_details(
+                    "Failed to export DMM Mod Folder",
+                    format!("{}\nParent: {}", e, parent_display),
+                );
+            }
+        }
+    }
+
+    /// Launch the configured Crimson Desert game executable. No validation
+    /// beyond the existence check performed inside [`launch_game`] — if the
+    /// user pointed `game_dir` at the wrong place we want a clear "exe not
+    /// found" toast rather than a fragile heuristic that might also reject
+    /// a working install.
+    fn action_start_game(&mut self) {
+        let game_dir = match &self.state.game_dir {
+            Some(d) => d.clone(),
+            None => {
+                self.state
+                    .toasts
+                    .warn("Set game directory first (File → Set Game Dir...)");
+                return;
+            }
+        };
+        match launch_game(&game_dir) {
+            Ok(()) => {
+                self.state.status = "Launching game...".to_string();
+                self.state.toasts.info("Launching game...");
+            }
+            Err(e) => {
+                self.state.status = format!("Launch error: {}", e);
+                self.state
+                    .toasts
+                    .error_with_details("Failed to launch game", e.to_string());
+            }
+        }
+    }
+
     /// Top-level entry for the "Deploy to Game" menu item.
     ///
     /// Runs the validation rules pre-flight: if any Errors are found we
@@ -1519,6 +1789,14 @@ impl WorkbenchApp {
                 );
                 self.state.status = msg.clone();
                 self.state.toasts.info(msg);
+                // Raise the post-deploy follow-up modal so the user can
+                // start the game / restore / dismiss without re-navigating
+                // the menus. The `Quick Test` loop is the whole point of
+                // this view.
+                self.state.deploy_followup_modal = Some(crate::state::DeployFollowup {
+                    dispatch_name: dispatch_name.clone(),
+                    overlay_group: overlay_group.to_string(),
+                });
             }
             Err(e) => {
                 self.state.status = format!("Deploy error: {}", e);
@@ -1527,6 +1805,139 @@ impl WorkbenchApp {
                     e.to_string(),
                 );
             }
+        }
+    }
+
+    /// Render the post-deploy follow-up modal — Quick Test workflow.
+    ///
+    /// Three-button modal (Start Game / Restore Vanilla / OK) that pops
+    /// after every successful deploy. Stays on screen until the user
+    /// clicks one of the buttons or the close X.
+    ///
+    /// - **Start Game**: spawns CrimsonDesert.exe via [`launch_game`].
+    ///   Closes the modal so subsequent deploys don't accumulate.
+    /// - **Restore Vanilla**: calls [`crate::restore::restore`] to remove
+    ///   the overlay + PAPGT entry, returning the game to vanilla state
+    ///   for that overlay. Closes the modal on completion (success or
+    ///   failure).
+    /// - **OK**: dismiss with no further action.
+    fn render_deploy_followup_modal(&mut self, ctx: &egui::Context) {
+        // Borrow the followup info up front so the buttons can read it
+        // without any borrow gymnastics inside the closure.
+        let Some(followup) = self.state.deploy_followup_modal.clone() else {
+            return;
+        };
+
+        let mut close = false;
+        let mut do_start_game = false;
+        let mut do_restore = false;
+        let mut window_open = true;
+
+        egui::Window::new("Deploy succeeded — what now?")
+            .open(&mut window_open)
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
+            .show(ctx, |ui| {
+                ui.label(format!(
+                    "Deployed '{}' to overlay '{}'.",
+                    followup.dispatch_name, followup.overlay_group
+                ));
+                ui.label(
+                    "Test it now? You can also revert to vanilla if the \
+                     edit didn't work as expected.",
+                );
+                ui.add_space(6.0);
+                ui.horizontal(|ui| {
+                    if ui
+                        .button("Start Game")
+                        .on_hover_text(
+                            "Launch CrimsonDesert.exe so you can test the \
+                             deployed mod immediately.",
+                        )
+                        .clicked()
+                    {
+                        do_start_game = true;
+                    }
+                    if ui
+                        .button(
+                            egui::RichText::new("Restore Vanilla")
+                                .color(egui::Color32::from_rgb(230, 80, 80)),
+                        )
+                        .on_hover_text(
+                            "Remove the overlay group + PAPGT entry, returning \
+                             the game to vanilla state for this overlay.",
+                        )
+                        .clicked()
+                    {
+                        do_restore = true;
+                    }
+                    if ui.button("OK").clicked() {
+                        close = true;
+                    }
+                });
+            });
+
+        // Window's close X was clicked.
+        if !window_open {
+            close = true;
+        }
+
+        if do_start_game {
+            // Don't close the modal here — let the user keep it open in
+            // case they want to also restore later. Actually... clearing
+            // is the more useful behaviour because deploying a second
+            // time would re-raise it anyway, and leaving stale state on
+            // screen confuses the user. Close it.
+            close = true;
+            match self.state.game_dir.as_ref() {
+                Some(dir) => match launch_game(dir) {
+                    Ok(()) => {
+                        self.state.toasts.info("Launching game...");
+                    }
+                    Err(e) => {
+                        self.state
+                            .toasts
+                            .error_with_details("Failed to launch game", e.to_string());
+                    }
+                },
+                None => {
+                    self.state.toasts.warn("No game directory set");
+                }
+            }
+        }
+        if do_restore {
+            close = true;
+            let game_dir = self.state.game_dir.clone();
+            match game_dir {
+                Some(dir) => match crate::restore::restore(&dir, &followup.overlay_group) {
+                    Ok(()) => {
+                        let msg = format!(
+                            "Restored: removed overlay {}",
+                            followup.overlay_group
+                        );
+                        self.state.status = msg.clone();
+                        self.state.toasts.info(msg);
+                    }
+                    Err(e) => {
+                        self.state.status = format!("Restore error: {}", e);
+                        self.state.toasts.error_with_details(
+                            format!(
+                                "Restore failed for overlay {}",
+                                followup.overlay_group
+                            ),
+                            e.to_string(),
+                        );
+                    }
+                },
+                None => {
+                    self.state.toasts.warn("No game directory set");
+                }
+            }
+        }
+
+        if close {
+            self.state.deploy_followup_modal = None;
         }
     }
 

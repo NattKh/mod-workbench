@@ -46,8 +46,11 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
             crate::state::LoadState::Error(msg) => {
                 let name = active.dispatch_name.clone();
                 let msg = msg.clone();
+                let has_raw_bytes = active.raw_pabgb.is_some();
+                let already_hex = active.show_hex_view;
                 let mut want_retry = false;
                 let mut want_close = false;
+                let mut want_toggle_hex = false;
                 ui.vertical_centered(|ui| {
                     ui.add_space(20.0);
                     ui.heading(
@@ -88,6 +91,19 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                         if ui.button("✖ Close tab").clicked() {
                             want_close = true;
                         }
+                        let hex_label = if already_hex { "Hide Hex" } else { "Show Hex" };
+                        let hex_btn = ui.add_enabled(
+                            has_raw_bytes,
+                            egui::Button::new(hex_label),
+                        );
+                        if hex_btn.clicked() {
+                            want_toggle_hex = true;
+                        }
+                        if !has_raw_bytes {
+                            hex_btn.on_hover_text(
+                                "No raw pabgb bytes were captured (PAZ extraction also failed).",
+                            );
+                        }
                     });
                 });
                 if want_retry {
@@ -103,12 +119,41 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                     if let Some(t_idx) = table_idx {
                         crate::ui::table_list::submit_load(state, t_idx);
                     }
+                    return;
                 }
                 if want_close {
                     if let Some(idx) = state.active_tab_idx {
                         state.close_tab(idx);
                     }
+                    return;
                 }
+                if want_toggle_hex {
+                    if let Some(active) = state.active_table_mut() {
+                        active.show_hex_view = !active.show_hex_view;
+                    }
+                }
+
+                // If the user wants the hex view (and we have bytes for it)
+                // render it in place of the rest of the error placeholder
+                // so byte-level inspection is possible without leaving the
+                // tab.
+                let active_after = state.active_table().unwrap();
+                if active_after.show_hex_view && active_after.raw_pabgb.is_some() {
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(6.0);
+                    ui.heading("Raw bytes (hex view)");
+                    // Clone out of the immutable borrow so we can reborrow
+                    // `state` mutably below to write back the hex state.
+                    let bytes_owned = active_after.raw_pabgb.as_ref().unwrap().clone();
+                    let mut hex_state = active_after.hex_view_state.clone();
+                    let _ = active_after;
+                    crate::ui::hex_view::show(ui, &bytes_owned, &mut hex_state);
+                    if let Some(active_mut) = state.active_table_mut() {
+                        active_mut.hex_view_state = hex_state;
+                    }
+                }
+
                 return;
             }
             crate::state::LoadState::Loaded => {
@@ -126,6 +171,7 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
     // shortcut handler in `app.rs` can call `ui.memory_mut(|m| m.request_focus(id))`
     // and pop focus into the field when the user presses `F`.
     let mut clear_filter = false;
+    let mut toggle_hex = false;
     let search_focus_requested = std::mem::take(&mut state.entry_search_focus_pending);
     ui.horizontal(|ui| {
         ui.label("Search:");
@@ -161,9 +207,56 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                 total
             ));
         }
+
+        // "Show Hex" toggle. Shifted to the right so it doesn't crowd the
+        // search bar; uses the same state field as the error placeholder
+        // so the toggle persists across retries / view switches.
+        let has_bytes = active_ref.raw_pabgb.is_some();
+        let already_hex = active_ref.show_hex_view;
+        let label = if already_hex { "Table" } else { "Hex" };
+        let tooltip = if already_hex {
+            "Switch back to the entry table view"
+        } else if has_bytes {
+            "Show raw pabgb bytes in a paged hex view"
+        } else {
+            "No raw bytes captured for this table — hex view unavailable"
+        };
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let btn = ui.add_enabled(has_bytes || already_hex, egui::Button::new(label));
+            if btn.on_hover_text(tooltip).clicked() {
+                toggle_hex = true;
+            }
+        });
     });
     if clear_filter {
         state.entry_filter.clear();
+    }
+    if toggle_hex {
+        if let Some(active) = state.active_table_mut() {
+            active.show_hex_view = !active.show_hex_view;
+        }
+    }
+
+    // When the hex toggle is on, swap the entry table for the hex view
+    // and bail before the filter / table renderer runs. We clone the
+    // bytes into local ownership because the table view's renderer needs
+    // an immutable borrow on `state` further down — keeping the hex
+    // path self-contained avoids borrow-juggling against that.
+    if state
+        .active_table()
+        .map(|a| a.show_hex_view && a.raw_pabgb.is_some())
+        .unwrap_or(false)
+    {
+        ui.separator();
+        let active_ref = state.active_table().unwrap();
+        let bytes_owned = active_ref.raw_pabgb.as_ref().unwrap().clone();
+        let mut hex_state = active_ref.hex_view_state.clone();
+        let _ = active_ref;
+        crate::ui::hex_view::show(ui, &bytes_owned, &mut hex_state);
+        if let Some(active_mut) = state.active_table_mut() {
+            active_mut.hex_view_state = hex_state;
+        }
+        return;
     }
     ui.separator();
 

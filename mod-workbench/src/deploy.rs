@@ -39,8 +39,14 @@ pub fn deploy(
         .map_err(|e| eprintln!("backup: pre-deploy snapshot failed: {}", e))
         .ok();
 
-    // Serialize entries to pabgb bytes
-    let pabgb_bytes = dmm_parser_rust_only::serialize_table_from_json(table_name, entries)?;
+    // Serialize entries to pabgb bytes. iteminfo lives outside the generic
+    // dispatch (see `table_loader::load_iteminfo`) so we route it through
+    // its dedicated serializer here as well.
+    let pabgb_bytes = if table_name == "item_info" {
+        dmm_parser_rust_only::item_info::serialize_iteminfo_from_json(entries)?
+    } else {
+        dmm_parser_rust_only::serialize_table_from_json(table_name, entries)?
+    };
 
     // Build the overlay directory
     let overlay_dir = game_dir.join(overlay_group);

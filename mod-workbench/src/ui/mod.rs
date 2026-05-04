@@ -1,6 +1,7 @@
 pub mod table_list;
 pub mod entry_table;
 pub mod field_panel;
+pub mod hex_view;
 pub mod bottom_bar;
 pub mod command_palette;
 pub mod history_panel;
@@ -16,3 +17,4 @@ pub mod metadata_dialog;
 pub mod settings_panel;
 pub mod templates_panel;
 pub mod wizards_panel;
+pub mod xml_panel;

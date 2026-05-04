@@ -22,15 +22,25 @@ use crate::mod_io::ModMetadata;
 
 /// Which export pipeline to invoke after the dialog confirms.
 ///
-/// Each variant maps 1:1 to a function in `crate::mod_package`.
+/// Each variant maps 1:1 to a function in `crate::mod_package`. The two
+/// DMM-compatible flows (`SaveDmmModFolder` and `SaveDmm`) sit alongside
+/// the legacy `SaveJson` (workbench-native v3) and `SaveModpkg` (deprecated
+/// zip bundle) — keeping both DMM flavours in the menu lets users pick the
+/// shape their downstream tool expects without trial-and-error.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExportAction {
     /// Single `.json` file via [`crate::mod_package::export_v3_json`].
+    /// Workbench-native — only useful for re-importing into mod-workbench.
     SaveJson,
     /// `.modpkg` zip via [`crate::mod_package::export_modpkg`].
+    /// Deprecated — kept for backwards compatibility with older releases.
     SaveModpkg,
-    /// DMM-compatible folder via [`crate::mod_package::export_dmm`].
+    /// DMM v3 intent JSON file via [`crate::mod_package::export_dmm`].
+    /// Single .json with `format: 3` (u32) and an `intents` array.
     SaveDmm,
+    /// PAZ overlay folder mod via [`crate::mod_package::export_paz_mod_folder`].
+    /// What DMM/Stacker actually want for "folder mods" — recommended.
+    SaveDmmModFolder,
 }
 
 impl ExportAction {
@@ -38,9 +48,10 @@ impl ExportAction {
     /// user which flow they're on.
     pub fn label(&self) -> &'static str {
         match self {
-            ExportAction::SaveJson => "Export as JSON",
+            ExportAction::SaveJson => "Export as Workbench JSON",
             ExportAction::SaveModpkg => "Export as .modpkg",
-            ExportAction::SaveDmm => "Export as DMM bundle",
+            ExportAction::SaveDmm => "Export as DMM v3 Intent JSON",
+            ExportAction::SaveDmmModFolder => "Export as DMM Mod Folder",
         }
     }
 }
@@ -201,7 +212,8 @@ pub fn show(ctx: &egui::Context, dialog: &mut MetadataDialog) -> Option<Metadata
                         let export_label = match dialog.action_after {
                             ExportAction::SaveJson => "Export JSON...",
                             ExportAction::SaveModpkg => "Export .modpkg...",
-                            ExportAction::SaveDmm => "Export DMM Bundle...",
+                            ExportAction::SaveDmm => "Export DMM Intent JSON...",
+                            ExportAction::SaveDmmModFolder => "Export Mod Folder...",
                         };
                         if ui
                             .add(egui::Button::new(
@@ -264,8 +276,12 @@ mod tests {
 
     #[test]
     fn test_export_action_label() {
-        assert_eq!(ExportAction::SaveJson.label(), "Export as JSON");
+        assert_eq!(ExportAction::SaveJson.label(), "Export as Workbench JSON");
         assert_eq!(ExportAction::SaveModpkg.label(), "Export as .modpkg");
-        assert_eq!(ExportAction::SaveDmm.label(), "Export as DMM bundle");
+        assert_eq!(ExportAction::SaveDmm.label(), "Export as DMM v3 Intent JSON");
+        assert_eq!(
+            ExportAction::SaveDmmModFolder.label(),
+            "Export as DMM Mod Folder"
+        );
     }
 }

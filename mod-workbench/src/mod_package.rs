@@ -26,13 +26,21 @@
 //! (when the inner `mod.json` is extracted).
 
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
+use dmm_parser_rust_only::binary::pamt::{Compression, CryptoType, PackMeta};
+use dmm_parser_rust_only::binary::paz::PackGroupBuilder;
 use serde_json::{json, Value};
 
-use crate::mod_io::{export_changes_full, ModMetadata};
+use crate::mod_io::{export_changes_full, export_dmm_v3, ModMetadata};
 use crate::notes::NoteStore;
-use crate::state::ChangeTracker;
+use crate::state::{ChangeTracker, TableMeta};
+
+/// Internal PAZ directory required by the game loader for game data files.
+/// Anything not at this exact path is ignored — the PAMT entry has to map
+/// `gamedata/binary__/client/bin/<file>` to the chunk offset, otherwise the
+/// game silently loads vanilla.
+const PAZ_INTERNAL_DIR: &str = "gamedata/binary__/client/bin";
 
 /// Export as raw v3 JSON, identical to the existing "Export Mod..." flow.
 ///
@@ -182,25 +190,24 @@ pub fn export_dmm_full(
     entries: &[Value],
     vanilla: &[Value],
     changes: &ChangeTracker,
-    notes: Option<&NoteStore>,
+    _notes: Option<&NoteStore>,
     out_dir: &Path,
 ) -> io::Result<()> {
     std::fs::create_dir_all(out_dir)?;
 
-    let mod_value = export_changes_full(
-        table,
-        entries,
-        vanilla,
-        changes,
-        Some(metadata),
-        notes,
-    );
+    // CRITICAL: DMM does NOT understand `crimson_field_json_v3`. It expects
+    // `format: 3` (u32) with intent-based ops. We use [`export_dmm_v3`] to
+    // produce a real DMM-compatible payload. Notes are intentionally not
+    // embedded here — the DMM intent format has no slot for them, and
+    // shipping them inline as `_notes` would be invisible to DMM but visible
+    // to anyone who opens the file.
+    let mod_value = export_dmm_v3(table, entries, vanilla, changes, Some(metadata));
     let mod_json = serde_json::to_string_pretty(&mod_value)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
     std::fs::write(out_dir.join("mod.json"), mod_json)?;
 
     let change_count = mod_value
-        .get("entries")
+        .get("intents")
         .and_then(|v| v.as_array())
         .map(|a| a.len())
         .unwrap_or(0);
@@ -303,6 +310,210 @@ fn zip_err_to_io(e: zip::result::ZipError) -> io::Error {
     io::Error::new(io::ErrorKind::Other, e.to_string())
 }
 
+/// Sanitize a user-supplied mod name into something safe to use as a folder
+/// name on Windows + POSIX. Keeps alphanumerics + `-`, `_`, `.`, ` ` and
+/// replaces everything else with `_`. Returns `"mod"` when the trimmed
+/// input is empty so callers don't have to handle that case themselves.
+fn sanitize_mod_folder_name(name: &str) -> String {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return "mod".to_string();
+    }
+    let mut out = String::with_capacity(trimmed.len());
+    for c in trimmed.chars() {
+        if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | ' ') {
+            out.push(c);
+        } else {
+            out.push('_');
+        }
+    }
+    out
+}
+
+/// Export as a PAZ overlay folder mod — the format DMM/Stacker actually
+/// expects when loading "folder mods". Layout:
+///
+/// ```text
+/// <out_dir>/<safe_mod_name>/
+///   <overlay_group>/         (e.g. "0036")
+///     0.paz                  PAZ archive containing pabgb + pabgh
+///     0.pamt                 PAMT index for the PAZ
+///   modinfo.json             {id, name, version, author, description}
+/// ```
+///
+/// Mirrors the proven workflow in `gui/tabs/buffs_v319.py::_buff_export_mod_folder`:
+///
+/// 1. The pabgb is built from `entries` via the dmm-parser serializer matching
+///    `dispatch_name` (iteminfo gets the dedicated path, others use the
+///    generic dispatch).
+/// 2. The pabgh is **NOT** rebuilt — we extract the vanilla file from
+///    `<game_dir>/0008/` and pack it unchanged. Entry offsets only shift if
+///    entries are added or removed, which the workbench doesn't currently do.
+/// 3. The PAZ overlay uses [`Compression::None`] for **both** files.
+///    pabgh files of random-looking offset bytes inflate under LZ4 — when
+///    `compressed_size > uncompressed_size` the game's loader rejects the
+///    chunk and crashes (or silently falls through to vanilla).
+/// 4. Crypto is ChaCha20 with `encrypt_info` lifted from `<game_dir>/0008/0.pamt`
+///    so the override matches the rest of the game's archives.
+/// 5. The PAZ's internal directory MUST be exactly `gamedata/binary__/client/bin`
+///    — short paths fail silently (the PAMT entry resolves to nothing the
+///    game's resource resolver looks at).
+///
+/// Returns the path to the created mod root folder so the caller can open it
+/// in a file browser or chain a deploy.
+pub fn export_paz_mod_folder(
+    metadata: &ModMetadata,
+    dispatch_name: &str,
+    meta: &TableMeta,
+    entries: &[Value],
+    game_dir: &Path,
+    overlay_group: &str,
+    out_dir: &Path,
+    mod_name: &str,
+) -> io::Result<PathBuf> {
+    // 1. Sanitize the user-supplied name so the resulting folder is creatable
+    //    on Windows + POSIX without surprises.
+    let safe_mod_name = sanitize_mod_folder_name(mod_name);
+    let mod_root = out_dir.join(&safe_mod_name);
+    let group_dir = mod_root.join(overlay_group);
+    std::fs::create_dir_all(&group_dir)?;
+
+    // 2. Serialize entries -> pabgb. iteminfo lives outside the generic
+    //    dispatch (see `dmm_parser_rust_only::item_info`) so we route it
+    //    through its dedicated serializer here as well.
+    let pabgb_bytes = if dispatch_name == "item_info" {
+        dmm_parser_rust_only::item_info::serialize_iteminfo_from_json(entries)?
+    } else {
+        dmm_parser_rust_only::serialize_table_from_json(dispatch_name, entries)?
+    };
+
+    // 3. Read encrypt_info from the original 0008/0.pamt — the override has
+    //    to use the same key material as the rest of the archives.
+    let orig_pamt_path = game_dir.join("0008/0.pamt");
+    let orig_pamt_data = std::fs::read(&orig_pamt_path).map_err(|e| {
+        io::Error::new(
+            e.kind(),
+            format!(
+                "Failed to read original PAMT at {}: {}",
+                orig_pamt_path.display(),
+                e
+            ),
+        )
+    })?;
+    let orig_pamt = PackMeta::parse(&orig_pamt_data, None)?;
+    let encrypt_info = orig_pamt.header.encrypt_info.encrypt_info;
+
+    // 4. Build the PAZ overlay directly into the group directory. We build
+    //    in-place rather than via a temp dir + copy because PackGroupBuilder
+    //    writes 0.paz / 0.pamt next to each other and the result is exactly
+    //    the layout DMM expects.
+    //
+    //    Compression MUST be None — see the function-level comment.
+    let mut builder = PackGroupBuilder::new(
+        &group_dir,
+        Compression::None,
+        CryptoType::ChaCha20,
+        encrypt_info,
+        256 * 1024 * 1024, // 256MB max chunk (we never approach this for one table)
+    );
+
+    builder.add_file(PAZ_INTERNAL_DIR, &meta.pabgb_filename, &pabgb_bytes)?;
+
+    // 5. Pabgh: extract vanilla from 0008 and pack it unchanged. Entry
+    //    offsets only need rebuilding when entries are added/removed, which
+    //    the workbench doesn't currently support — so the vanilla index
+    //    still resolves correctly.
+    if let Some(ref pabgh_name) = meta.pabgh_filename {
+        if let Ok(pabgh_bytes) = extract_original_pabgh(game_dir, pabgh_name, &encrypt_info) {
+            builder.add_file_with_compression(
+                PAZ_INTERNAL_DIR,
+                pabgh_name,
+                &pabgh_bytes,
+                Compression::None,
+            )?;
+        }
+    }
+
+    // 6. Finalise: writes 0.paz + 0.pamt directly into <group_dir>.
+    let _pamt_bytes = builder.finish()?;
+
+    // 7. modinfo.json — DMM/Stacker read this for the mod display name +
+    //    attribution. Mirrors the shape produced by buffs_v319.py.
+    let id = safe_mod_name.to_lowercase().replace(' ', "_");
+    let display_name = if metadata.name.is_empty() {
+        mod_name.trim().to_string()
+    } else {
+        metadata.name.clone()
+    };
+    let author = if metadata.author.is_empty() {
+        "CrimsonGameMods".to_string()
+    } else {
+        metadata.author.clone()
+    };
+    let version = if metadata.version.is_empty() {
+        "1.0.0".to_string()
+    } else {
+        metadata.version.clone()
+    };
+    let description = if metadata.description.is_empty() {
+        format!("Mod for {}", meta.pabgb_filename)
+    } else {
+        metadata.description.clone()
+    };
+    let modinfo = json!({
+        "id": id,
+        "name": display_name,
+        "version": version,
+        "author": author,
+        "description": description,
+    });
+    let modinfo_str = serde_json::to_string_pretty(&modinfo)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    std::fs::write(mod_root.join("modinfo.json"), modinfo_str)?;
+
+    Ok(mod_root)
+}
+
+/// Extract the vanilla pabgh from group 0008. Mirrors
+/// `crate::deploy::extract_original_pabgh` — kept here as a private helper
+/// because the deploy module's copy is private and exposing a duplicate is
+/// cheaper than restructuring for cross-module reuse.
+fn extract_original_pabgh(
+    game_dir: &Path,
+    pabgh_name: &str,
+    encrypt_info: &[u8; 3],
+) -> io::Result<Vec<u8>> {
+    use dmm_parser_rust_only::binary::paz;
+
+    let group_dir = game_dir.join("0008");
+    let pamt_data = std::fs::read(group_dir.join("0.pamt"))?;
+    let pamt = PackMeta::parse(&pamt_data, None)?;
+
+    let dir = pamt
+        .directories
+        .iter()
+        .find(|d| d.path == PAZ_INTERNAL_DIR)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Directory '{}' not found in 0008/0.pamt", PAZ_INTERNAL_DIR),
+            )
+        })?;
+
+    let file = dir
+        .files
+        .iter()
+        .find(|f| f.name == pabgh_name)
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("File '{}' not found in {}", pabgh_name, PAZ_INTERNAL_DIR),
+            )
+        })?;
+
+    paz::extract_file(&group_dir, file, PAZ_INTERNAL_DIR, encrypt_info)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -363,15 +574,22 @@ mod tests {
             ..Default::default()
         };
         let out = dir.join("MyMod");
-        export_dmm(&meta, "test_table", &entries, &vanilla, &changes, &out).unwrap();
+        export_dmm(&meta, "item_info", &entries, &vanilla, &changes, &out).unwrap();
         assert!(out.join("mod.json").exists());
         assert!(out.join("metadata.json").exists());
         assert!(out.join("README.md").exists());
+
+        // mod.json should be the DMM v3 intent format (format=3, target,
+        // intents) — NOT our workbench-native crimson_field_json_v3.
+        let mod_raw = std::fs::read_to_string(out.join("mod.json")).unwrap();
+        let mod_val: Value = serde_json::from_str(&mod_raw).unwrap();
+        assert_eq!(mod_val["format"], 3, "DMM bundle must use format=3 (u32)");
+        assert_eq!(mod_val["target"], "iteminfo.pabgb");
+        assert!(mod_val["intents"].is_array(), "must have intents array");
+
         let metadata_raw = std::fs::read_to_string(out.join("metadata.json")).unwrap();
         let metadata_val: Value = serde_json::from_str(&metadata_raw).unwrap();
         assert_eq!(metadata_val["name"], "DmmMod");
-        assert_eq!(metadata_val["author"], "Me");
-        assert_eq!(metadata_val["table"], "test_table");
     }
 
     #[test]

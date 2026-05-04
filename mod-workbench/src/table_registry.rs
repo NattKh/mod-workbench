@@ -6,10 +6,27 @@ use crate::state::TableMeta;
 /// on disk (e.g. "gimmickinfo.pabgb"). Most tables follow the rule of simply
 /// stripping underscores and appending "info.pabgb", but several have special
 /// filename mappings.
+///
+/// In addition to the dispatch list, we add a few "manual extras" — tables
+/// like `item_info` (iteminfo.pabgb) that have a dedicated parser module in
+/// dmm-parser-rust-only (`src/item_info/`) instead of going through the
+/// generic dispatch. These need a special-case route in
+/// [`crate::table_loader::load_table`].
 pub fn build_registry() -> Vec<TableMeta> {
-    let dispatch_names = dmm_parser_rust_only::supported_tables();
-    let mut registry = Vec::with_capacity(dispatch_names.len());
+    let mut registry: Vec<TableMeta> = Vec::new();
 
+    // Manual extras: tables that have dedicated parsers in dmm-parser-rust-only
+    // and aren't returned by `supported_tables()`. They go through special-case
+    // routing in `table_loader::load_table`. iteminfo is the most-used modding
+    // target (6,022 items) so it has to be present in the table list.
+    registry.push(TableMeta {
+        dispatch_name: "item_info".to_string(),
+        pabgb_filename: "iteminfo.pabgb".to_string(),
+        pabgh_filename: Some("iteminfo.pabgh".to_string()),
+    });
+
+    // Dispatch tables (already wired up via supported_tables).
+    let dispatch_names = dmm_parser_rust_only::supported_tables();
     for &name in dispatch_names {
         let stem = dispatch_name_to_pabgb_stem(name);
         let pabgb_filename = format!("{}.pabgb", stem);
@@ -22,6 +39,9 @@ pub fn build_registry() -> Vec<TableMeta> {
         });
     }
 
+    // Sort alphabetically by dispatch_name so item_info sits in its expected
+    // alphabetical slot in the table list rather than floating at the top.
+    registry.sort_by(|a, b| a.dispatch_name.cmp(&b.dispatch_name));
     registry
 }
 
@@ -66,7 +86,27 @@ mod tests {
     #[test]
     fn test_registry_has_all_tables() {
         let registry = build_registry();
-        let expected_count = dmm_parser_rust_only::supported_tables().len();
+        // dispatch tables + manual extras (item_info)
+        let expected_count = dmm_parser_rust_only::supported_tables().len() + 1;
         assert_eq!(registry.len(), expected_count);
+    }
+
+    #[test]
+    fn test_registry_includes_item_info() {
+        let registry = build_registry();
+        let item_info = registry.iter().find(|m| m.dispatch_name == "item_info");
+        assert!(item_info.is_some(), "item_info must be in the registry");
+        let m = item_info.unwrap();
+        assert_eq!(m.pabgb_filename, "iteminfo.pabgb");
+        assert_eq!(m.pabgh_filename.as_deref(), Some("iteminfo.pabgh"));
+    }
+
+    #[test]
+    fn test_registry_is_sorted() {
+        let registry = build_registry();
+        let names: Vec<&str> = registry.iter().map(|m| m.dispatch_name.as_str()).collect();
+        let mut sorted = names.clone();
+        sorted.sort();
+        assert_eq!(names, sorted, "registry should be alphabetically sorted");
     }
 }

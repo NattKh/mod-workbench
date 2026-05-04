@@ -166,6 +166,154 @@ pub fn export_changes_full(
     Value::Object(root)
 }
 
+/// Map a dispatch name (e.g. "item_info") to its on-disk pabgb filename
+/// (e.g. "iteminfo.pabgb"). DMM addresses targets by filename, not dispatch
+/// name, so the two have to be kept in sync. Mirrors the lookup in
+/// `crate::table_registry::dispatch_name_to_pabgb_stem` plus the manual
+/// `item_info` extra.
+fn dispatch_to_pabgb_filename(dispatch: &str) -> String {
+    let stem = match dispatch {
+        "item_info" => "iteminfo",
+        "faction_info" => "faction",
+        "skill_info" => "skill",
+        "board_info" => "board",
+        "inventory_info" => "inventory",
+        "reserve_slot_info" => "reserveslot",
+        "field_revive_info" => "reviepointinfo",
+        "game_level_info" => "levelinfo",
+        "character_change_info" => "characterchange",
+        "game_event_handler_info" => "gameeventhandler",
+        "game_play_trigger_info" => "gameplaytrigger",
+        "global_game_event_info" => "globalgameevent",
+        "global_game_event_group_info" => "globalgameeventgroup",
+        "key_map_setting_list_info" => "keymap",
+        "platform_entitlement_info" => "entitlementinfo",
+        "royal_supply_info" => "royalsupply",
+        "special_mode_info" => "specialmode",
+        "ui_social_action_info" => "uisocialaction",
+        "valid_schedule_action_info" => "validscheduleaction",
+        "gimmick_gate_connection_info" => "gimmickgateconnection",
+        "bitmap_position_info" => "bitmapposition",
+        "faction_group_info" => "factiongroup",
+        "faction_node_info" => "factionnode",
+        "faction_relation_group_info" => "factionrelationgroup",
+        "faction_waypoint_info" => "factionwaypoint",
+        // Default: strip underscores
+        _ => return format!("{}.pabgb", dispatch.replace('_', "")),
+    };
+    format!("{}.pabgb", stem)
+}
+
+/// Walk a JSON object recursively and emit one (path, value) pair per leaf
+/// scalar. Container keys come out as dot/bracket notation
+/// (`equip_passive_skill_list[0].skill`). Used to flatten a "fields" map
+/// from the workbench shape into a stream of DMM "set" intents.
+fn flatten_leaves(prefix: &str, value: &Value, out: &mut Vec<(String, Value)>) {
+    match value {
+        Value::Object(map) => {
+            for (k, v) in map {
+                let path = if prefix.is_empty() {
+                    k.clone()
+                } else {
+                    format!("{}.{}", prefix, k)
+                };
+                flatten_leaves(&path, v, out);
+            }
+        }
+        Value::Array(arr) => {
+            for (i, v) in arr.iter().enumerate() {
+                let path = format!("{}[{}]", prefix, i);
+                flatten_leaves(&path, v, out);
+            }
+        }
+        _ => out.push((prefix.to_string(), value.clone())),
+    }
+}
+
+/// Export changes in **DMM v3 intent format** — what the Definitive Mod
+/// Manager actually understands. This is the format you should use for any
+/// mod that needs to be loaded by DMM 1.3.x.
+///
+/// Output shape (single-target):
+/// ```json
+/// {
+///   "format": 3,
+///   "_meta": { ... optional metadata ... },
+///   "target": "iteminfo.pabgb",
+///   "intents": [
+///     { "entry": "Item_Foo", "key": 1234, "field": "cooltime",
+///       "op": "set", "new": 5 }
+///   ]
+/// }
+/// ```
+///
+/// Why we needed a second exporter: the `crimson_field_json_v3` shape we
+/// emit by default is workbench-native and uses `format` as a STRING, plus
+/// nests changes under `entries[].fields`. DMM rejects it because it expects
+/// `format: 3` (u32) and per-field `intents`. See conflict.rs for the dual
+/// importer that accepts both.
+pub fn export_dmm_v3(
+    dispatch_name: &str,
+    entries: &[Value],
+    vanilla: &[Value],
+    changes: &ChangeTracker,
+    metadata: Option<&ModMetadata>,
+) -> Value {
+    let target = dispatch_to_pabgb_filename(dispatch_name);
+
+    let mut intents: Vec<Value> = Vec::new();
+    for (i, entry) in entries.iter().enumerate() {
+        let key = extract_entry_key(entry);
+        if !changes.is_entry_modified(key) {
+            continue;
+        }
+        let vanilla_entry = vanilla.get(i);
+        let changed_fields = diff_entry(entry, vanilla_entry);
+        if changed_fields.is_empty() {
+            continue;
+        }
+
+        // Use string_key as the human-readable "entry" name when present —
+        // DMM uses this for log output. Numeric `key` is the actual lookup
+        // identifier so it's always included.
+        let entry_name = entry
+            .get("string_key")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        // Flatten the changed-fields object into one intent per leaf.
+        for (field_name, new_value) in &changed_fields {
+            let mut leaves: Vec<(String, Value)> = Vec::new();
+            flatten_leaves(field_name, new_value, &mut leaves);
+            for (path, value) in leaves {
+                let mut intent = serde_json::Map::new();
+                if !entry_name.is_empty() {
+                    intent.insert("entry".into(), Value::String(entry_name.clone()));
+                }
+                intent.insert("key".into(), Value::from(key));
+                intent.insert("field".into(), Value::String(path));
+                intent.insert("op".into(), Value::String("set".into()));
+                intent.insert("new".into(), value);
+                intents.push(Value::Object(intent));
+            }
+        }
+    }
+
+    let mut root = serde_json::Map::new();
+    root.insert("format".into(), Value::from(3u32));
+    if let Some(meta) = metadata {
+        if !meta.is_empty() {
+            if let Ok(meta_value) = serde_json::to_value(meta) {
+                root.insert("_meta".into(), meta_value);
+            }
+        }
+    }
+    root.insert("target".into(), Value::String(target));
+    root.insert("intents".into(), Value::Array(intents));
+    Value::Object(root)
+}
+
 /// Read embedded notes back out of a mod JSON, scoped to `table_name`.
 ///
 /// The `_notes` map uses string keys for the entry id (because JSON object

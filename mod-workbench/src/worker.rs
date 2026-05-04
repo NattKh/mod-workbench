@@ -108,9 +108,14 @@ pub enum Reply {
     /// doesn't have to: cloning a `Vec<serde_json::Value>` for tables with
     /// 10K+ deeply-nested entries can take 100ms-1s+, which would freeze the
     /// frame for tables like drop_set_info (11910) or multichange (17029).
+    ///
+    /// `raw_pabgb` is sent regardless of parse outcome (success or failure)
+    /// so the hex viewer fallback can populate even when the schema parse
+    /// blows up — that's the case where users most want byte-level access.
     TableLoaded {
         dispatch_name: String,
         result: Result<TableLoadPayload, String>,
+        raw_pabgb: Option<Vec<u8>>,
     },
     /// Returned when `LoadCatalog` completes.
     CatalogLoaded {
@@ -281,11 +286,20 @@ fn handle_load_table(
     };
 
     // Heavy work happens on this worker thread:
-    //   1. Read PAZ + parse JSON via dmm_parser_rust_only
-    //   2. Clone the entries to build the vanilla snapshot
-    //   3. Walk the entries to detect column names for the table view
-    // Doing 2 + 3 here means the UI thread just has to move the payload
+    //   1. Read PAZ to capture raw bytes (also feeds the hex viewer)
+    //   2. Parse JSON via dmm_parser_rust_only
+    //   3. Clone the entries to build the vanilla snapshot
+    //   4. Walk the entries to detect column names for the table view
+    // Doing 3 + 4 here means the UI thread just has to move the payload
     // into ActiveTable when the reply lands, which is essentially free.
+    //
+    // The raw pabgb capture is independent of the parse: if the parser
+    // chokes on a v1.0.5 schema change we still want to populate the hex
+    // viewer so users can inspect / triage the bytes by hand.
+    let raw_pabgb = crate::table_loader::read_pabgb_and_pabgh(&game_dir, &meta)
+        .map(|(pabgb, _pabgh)| pabgb)
+        .ok();
+
     let result = crate::table_loader::load_table(&game_dir, &meta)
         .map_err(|e| e.to_string())
         .map(|entries| {
@@ -301,6 +315,7 @@ fn handle_load_table(
     let _ = tx.send(Reply::TableLoaded {
         dispatch_name,
         result,
+        raw_pabgb,
     });
 }
 

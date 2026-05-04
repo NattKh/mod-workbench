@@ -11,11 +11,32 @@ const GAME_DATA_DIR: &str = "gamedata/binary__/client/bin";
 /// Load a table's entries from the game's PAZ archives.
 ///
 /// Reads the pabgb (and optionally pabgh) from PAZ group 0008, then parses
-/// via dmm_parser_rust_only's dispatch layer.
+/// via dmm_parser_rust_only's dispatch layer — except for `item_info`,
+/// which uses the dedicated `dmm_parser_rust_only::item_info` parser module
+/// that lives outside the generic dispatch table.
 pub fn load_table(
     game_dir: &Path,
     meta: &TableMeta,
 ) -> io::Result<Vec<serde_json::Value>> {
+    if meta.dispatch_name == "item_info" {
+        return load_iteminfo(game_dir, meta);
+    }
+
+    let (pabgb_bytes, pabgh_bytes) = read_pabgb_and_pabgh(game_dir, meta)?;
+    dmm_parser_rust_only::parse_table_to_json(
+        &meta.dispatch_name,
+        &pabgb_bytes,
+        pabgh_bytes.as_deref(),
+    )
+}
+
+/// Read the raw bytes for a table's pabgb (and optional pabgh) from the
+/// vanilla 0008 PAZ group. Used by both the dispatch path and the iteminfo
+/// special case so the PAZ extraction code lives in one place.
+pub fn read_pabgb_and_pabgh(
+    game_dir: &Path,
+    meta: &TableMeta,
+) -> io::Result<(Vec<u8>, Option<Vec<u8>>)> {
     let group_dir = game_dir.join("0008");
     let pamt_path = group_dir.join("0.pamt");
 
@@ -79,9 +100,37 @@ pub fn load_table(
         None
     };
 
-    dmm_parser_rust_only::parse_table_to_json(
-        &meta.dispatch_name,
-        &pabgb_bytes,
-        pabgh_bytes.as_deref(),
-    )
+    Ok((pabgb_bytes, pabgh_bytes))
+}
+
+/// Special-case loader for `iteminfo.pabgb`. Doesn't go through the generic
+/// dispatch because the iteminfo parser lives in its own module
+/// (`dmm_parser_rust_only::item_info`) and predates the dispatch table.
+///
+/// Walks `ItemInfo::read_from` in a loop, same shape as the dispatch's
+/// sequential-table macro.
+fn load_iteminfo(game_dir: &Path, meta: &TableMeta) -> io::Result<Vec<serde_json::Value>> {
+    use dmm_parser_rust_only::binary::BinaryRead;
+    use dmm_parser_rust_only::item_info::ItemInfo;
+
+    let (pabgb_bytes, _pabgh_bytes) = read_pabgb_and_pabgh(game_dir, meta)?;
+
+    let mut offset = 0usize;
+    let mut items: Vec<serde_json::Value> = Vec::new();
+    while offset < pabgb_bytes.len() {
+        let read_at = offset;
+        let item = ItemInfo::read_from(&pabgb_bytes, &mut offset).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "iteminfo: parse error at item #{} (offset 0x{:08x}): {}",
+                    items.len(),
+                    read_at,
+                    e
+                ),
+            )
+        })?;
+        items.push(serde_json::Value::Object(item.to_json_dict()));
+    }
+    Ok(items)
 }
