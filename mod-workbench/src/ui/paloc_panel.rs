@@ -11,7 +11,7 @@
 use egui_extras::{Column, TableBuilder};
 
 use crate::paloc_editor::{self, LANGUAGES};
-use crate::state::AppState;
+use crate::state::{AppState, PendingNav};
 
 /// Internal-storage overlay group name used for paloc deployment.
 ///
@@ -22,6 +22,11 @@ const PALOC_OVERLAY_GROUP: &str = "0064";
 pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
     ui.heading("PALOC Editor");
     ui.separator();
+
+    // Drain any pending global-search nav before rendering — keeps the
+    // dispatch in this single edge so the rest of the panel doesn't have
+    // to know about it. `take()` so a stale request can't fire twice.
+    consume_pending_nav(state);
 
     // ---- Toolbar: language / Load / Save ----------------------------------
     let mut do_load = false;
@@ -128,13 +133,26 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
         .collect();
 
     let row_height = 24.0;
-    TableBuilder::new(ui)
+    // Translate the entry-index scroll target into a filtered-row index.
+    // When the user opened this panel via global-search nav we cleared
+    // `session.filter` to keep the target visible, so the entry index
+    // and filtered index typically coincide; we still resolve it through
+    // `visible_indices` so a manually applied filter doesn't mis-scroll.
+    let pending_scroll = session.pending_scroll_row.take();
+    let scroll_to_row_target =
+        pending_scroll.and_then(|entry_idx| visible_indices.iter().position(|&i| i == entry_idx));
+
+    let mut builder = TableBuilder::new(ui)
         .striped(true)
         .resizable(true)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .column(Column::auto().at_least(80.0).at_most(120.0).clip(true)) // unk_id
         .column(Column::initial(280.0).at_least(120.0).clip(true)) // key
-        .column(Column::remainder().at_least(200.0)) // value (editable)
+        .column(Column::remainder().at_least(200.0)); // value (editable)
+    if let Some(row) = scroll_to_row_target {
+        builder = builder.scroll_to_row(row, Some(egui::Align::Center));
+    }
+    builder
         .header(22.0, |mut header| {
             header.col(|ui| { ui.strong("ID"); });
             header.col(|ui| { ui.strong("string_key"); });
@@ -184,6 +202,52 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                 });
             });
         });
+}
+
+/// Consume a pending [`PendingNav::Paloc`] request, if one is queued.
+///
+/// Sets [`AppState::paloc_language`] to the requested language, triggers
+/// a load when no session is open or the session is on a different
+/// language, and writes [`PalocSession::pending_scroll_row`] so the
+/// editor's table scrolls to the matching row on its next render.
+///
+/// Other [`PendingNav`] variants are left untouched so the right editor
+/// can pick them up on its own draw.
+fn consume_pending_nav(state: &mut AppState) {
+    let Some(PendingNav::Paloc { lang, hash_id }) = state.pending_global_nav.as_ref().cloned()
+    else {
+        return;
+    };
+    // We're handling it — drop it from the queue regardless of outcome.
+    state.pending_global_nav = None;
+
+    state.paloc_language = lang.clone();
+
+    let needs_load = match state.paloc_session.as_ref() {
+        Some(s) => s.language != lang,
+        None => true,
+    };
+    if needs_load {
+        // Synchronous load — small file, runs in a few ms.
+        load_paloc(state);
+    }
+
+    // Resolve the row (in the unfiltered list); store on the session so
+    // the table renderer can scroll on the next draw. We deliberately
+    // clear the search filter so the row is guaranteed to be visible
+    // when we hand it to `scroll_to_row` — otherwise a stale filter
+    // could hide it.
+    if let Some(session) = state.paloc_session.as_mut() {
+        session.filter.clear();
+        if let Some(idx) = session.entries.iter().position(|e| e.unk_id == hash_id) {
+            session.pending_scroll_row = Some(idx);
+        } else {
+            state.toasts.warn(format!(
+                "PALOC[{}]: id {} not found after load.",
+                lang, hash_id
+            ));
+        }
+    }
 }
 
 fn load_paloc(state: &mut AppState) {

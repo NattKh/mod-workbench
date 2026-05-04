@@ -381,6 +381,13 @@ fn build_candidates(state: &AppState) -> Vec<PaletteItem> {
         ("Open View: Lint Panel", MainView::Lint),
         ("Open View: Settings", MainView::Settings),
         ("Open View: Library", MainView::Library),
+        ("Open View: Archive Inspector", MainView::Archive),
+        ("Open View: PAATT Editor", MainView::Paatt),
+        ("Open View: PAAC Editor", MainView::Paac),
+        ("Open View: PAPPT Editor", MainView::Pappt),
+        ("Open View: PAMHC Editor", MainView::Pamhc),
+        ("Open View: Binary Inspector", MainView::BinaryInspector),
+        ("Open View: Global Search", MainView::GlobalSearch),
     ] {
         out.push(PaletteItem {
             label: label.to_string(),

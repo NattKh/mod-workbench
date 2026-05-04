@@ -136,3 +136,7 @@ pub mod equip_info;
 pub mod field_revive_info;
 pub mod equip_slot_info;
 pub mod blob_runtime;
+pub mod paac;
+pub mod paatt;
+pub mod pamhc;
+pub mod pappt;

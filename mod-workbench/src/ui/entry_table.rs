@@ -48,21 +48,39 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                 let msg = msg.clone();
                 let has_raw_bytes = active.raw_pabgb.is_some();
                 let already_hex = active.show_hex_view;
+                // Snapshot the raw bytes (and a bounded prefix) up front so
+                // both the inline "First 256 bytes" preview and the bug
+                // report can borrow them without re-borrowing `state`.
+                let raw_byte_count = active
+                    .raw_pabgb
+                    .as_ref()
+                    .map(|b| b.len())
+                    .unwrap_or(0);
+                let raw_prefix: Option<Vec<u8>> = active.raw_pabgb.as_ref().map(|b| {
+                    let n = b.len().min(256);
+                    b[..n].to_vec()
+                });
                 let mut want_retry = false;
                 let mut want_close = false;
                 let mut want_toggle_hex = false;
-                // Pick a hint based on the actual failure mode rather than
-                // always blaming a parser version mismatch. The three modes
-                // we see in the wild:
-                //   1. "File 'X.pabgb' not found in gamedata/binary__/..."
-                //      = the file isn't in the PAZ at all (dev-only file or
+                let mut want_copy_report = false;
+                // Classify the failure once. Both the hint label and the
+                // bug-report's "category" line key off this so they can't
+                // drift. The four modes we see in the wild:
+                //   1. PAZ lookup — "File 'X.pabgb' not found in gamedata/..."
+                //      The file isn't in the PAZ at all (dev-only file or
                 //      a name mismatch between dispatch and on-disk).
-                //   2. "Cannot read PAMT" / "Directory '...' not found"
-                //      = game install path or PAMT itself is wrong.
-                //   3. anything else (parse error, EOF, etc.)
-                //      = parser couldn't decode the bytes.
-                let (header_label, hint) = if msg.contains("not found in gamedata") {
-                    (
+                //   2. Game data lookup — "Cannot read PAMT" / "Directory
+                //      '...' not found in 0008". Game install path or PAMT
+                //      itself is wrong.
+                //   3. Panic — worker caught_unwind formatted a payload.
+                //      Surfaced as "panic while parsing X: ..." or
+                //      "...: panic — ...".
+                //   4. Parser error — anything else (parse error, EOF, etc).
+                //      The parser couldn't decode the bytes.
+                let category = classify_error(&msg);
+                let (header_label, hint) = match category {
+                    ErrorCategory::PazLookup => (
                         "PAZ lookup failed:",
                         "This table isn't present in your game's 0008 PAZ at the \
                          standard internal path. Common causes: it's a dev-only \
@@ -70,23 +88,30 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                          was renamed in a patch and the registry is out of date. \
                          Other tables are unaffected — close this tab and try \
                          another one.",
-                    )
-                } else if msg.contains("Cannot read PAMT") || msg.contains("not found in 0008") {
-                    (
+                    ),
+                    ErrorCategory::GameDataLookup => (
                         "Game data lookup failed:",
                         "Couldn't read the PAMT for the 0008 PAZ group. Verify \
                          that the configured Game Directory points at a real \
                          Crimson Desert install (Settings → Game Dir). The PAMT \
                          file is at `<game-dir>/0008/0.pamt`.",
-                    )
-                } else {
-                    (
+                    ),
+                    ErrorCategory::Panic => (
+                        "Parser panic:",
+                        "The parser hit an unrecoverable error (likely an \
+                         out-of-bounds slice or unwrap on a schema mismatch) \
+                         and was caught by the worker's panic guard. The \
+                         workbench is still alive; only this tab is broken. \
+                         Use \"Copy bug report\" to capture everything a \
+                         maintainer needs and paste into a GitHub issue.",
+                    ),
+                    ErrorCategory::Parser => (
                         "Parser error:",
                         "The parser couldn't decode this table's bytes. Most \
                          likely cause: the table's binary layout changed in a \
                          recent game patch. Try Show Hex to inspect the raw \
                          pabgb. Other tables that didn't change are unaffected.",
-                    )
+                    ),
                 };
 
                 ui.vertical_centered(|ui| {
@@ -137,8 +162,55 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                                 "No raw pabgb bytes were captured (PAZ extraction also failed).",
                             );
                         }
+                        if ui
+                            .button("📋 Copy bug report")
+                            .on_hover_text(
+                                "Build a GitHub-issue-shaped report (version, \
+                                 dispatch name, error message, first 256 raw \
+                                 bytes) and put it on the clipboard.",
+                            )
+                            .clicked()
+                        {
+                            want_copy_report = true;
+                        }
                     });
+
+                    // Inline "First 256 bytes" preview so the user can
+                    // sanity-check the file's header without reaching for
+                    // the hex view tab. Hidden under a CollapsingHeader so
+                    // it doesn't dominate the placeholder when nobody
+                    // wants it.
+                    if let Some(prefix) = raw_prefix.as_ref() {
+                        ui.add_space(8.0);
+                        egui::CollapsingHeader::new(format!(
+                            "First {} bytes (of {})",
+                            prefix.len(),
+                            raw_byte_count
+                        ))
+                        .id_salt(("err_first256", &name))
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            let dump = format_hex_dump(prefix, 0);
+                            ui.add(
+                                egui::TextEdit::multiline(&mut dump.as_str())
+                                    .font(egui::TextStyle::Monospace)
+                                    .desired_width(f32::INFINITY)
+                                    .desired_rows(prefix.len().div_ceil(16).min(16) as usize),
+                            );
+                        });
+                    }
                 });
+                if want_copy_report {
+                    let report = build_bug_report(
+                        &name,
+                        category,
+                        &msg,
+                        raw_prefix.as_deref(),
+                        raw_byte_count,
+                    );
+                    ui.ctx().copy_text(report);
+                    state.toasts.info("Bug report copied to clipboard.");
+                }
                 if want_retry {
                     // Resubmit by closing the error tab and calling submit_load.
                     let active_idx = state.active_tab_idx;
@@ -503,6 +575,183 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
             active.selected_entry_idx = Some(idx);
         }
     }
+}
+
+/// Classification of a `LoadState::Error` message into one of four buckets.
+///
+/// Drives both the user-facing hint label in the error placeholder and the
+/// `## Category` line in the copyable bug report so the two can't drift.
+/// See the inline comment block at the call site for what each variant maps
+/// to in error-string-land.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ErrorCategory {
+    PazLookup,
+    GameDataLookup,
+    Panic,
+    Parser,
+    // Note: do not add a Default — the enum is exhaustively matched at every
+    // call site so a new variant forces an explicit hint update.
+}
+
+impl ErrorCategory {
+    /// Short tag used in the bug-report's `## Category` line. Plain ASCII so
+    /// it pastes cleanly into a GitHub issue body.
+    fn tag(self) -> &'static str {
+        match self {
+            ErrorCategory::PazLookup => "PAZ lookup",
+            ErrorCategory::GameDataLookup => "Game data",
+            ErrorCategory::Panic => "Panic",
+            ErrorCategory::Parser => "Parser error",
+        }
+    }
+}
+
+/// Map a raw error message into an [`ErrorCategory`].
+///
+/// The order of checks matters: panic markers are most specific, then PAZ
+/// lookup ("not found in gamedata"), then PAMT-level failures, with parser
+/// errors as the fallback. Kept as a free function (vs inline match) so the
+/// bug-report builder can call it without duplicating the string-checks.
+fn classify_error(msg: &str) -> ErrorCategory {
+    // Panic guard formats: "panic while parsing X: <payload>" (single load)
+    // and "<table>: panic — <payload>" (global search). Either marker
+    // implies a caught_unwind in the worker.
+    if msg.contains("panic while parsing") || msg.contains("panic — ") {
+        ErrorCategory::Panic
+    } else if msg.contains("not found in gamedata") {
+        ErrorCategory::PazLookup
+    } else if msg.contains("Cannot read PAMT") || msg.contains("not found in 0008") {
+        ErrorCategory::GameDataLookup
+    } else {
+        ErrorCategory::Parser
+    }
+}
+
+/// Pull the file name out of a "File 'X.pabgb' not found in gamedata/..."
+/// message, if present. Returns `None` for any other error category.
+fn extract_paz_filename(msg: &str) -> Option<&str> {
+    // Anchor on the literal `File '`, then take everything up to the next
+    // single quote. Defensive against the rare case where the message gets
+    // wrapped or prefixed by an upstream layer — we just give up and let
+    // the caller skip the path line.
+    let after = msg.split_once("File '")?.1;
+    after.split_once('\'').map(|(name, _)| name)
+}
+
+/// Format a single hex-dump row: `OFFSET  HH HH HH ... HH  ASCII`.
+///
+/// `offset` is the absolute byte position of `chunk[0]` in the source slice.
+/// `chunk` is up to 16 bytes; shorter chunks pad with spaces so successive
+/// lines line up under a fixed-width font. Mirrors the layout used by the
+/// hex_view page grid (mid-row spacer between bytes 7/8) so a maintainer
+/// reading a bug report sees the same shape they'd see in the workbench's
+/// hex view.
+fn format_hex_line(offset: usize, chunk: &[u8]) -> String {
+    let mut out = String::with_capacity(80);
+    out.push_str(&format!("{:08X}  ", offset));
+    for i in 0..16 {
+        if i == 8 {
+            out.push(' ');
+        }
+        if i < chunk.len() {
+            out.push_str(&format!("{:02X} ", chunk[i]));
+        } else {
+            out.push_str("   ");
+        }
+    }
+    out.push(' ');
+    for &b in chunk {
+        out.push(if (0x20..0x7F).contains(&b) { b as char } else { '.' });
+    }
+    out
+}
+
+/// Format a slice as a multi-line hex dump (16 bytes per row), starting at
+/// `start_offset`. Each row is the output of [`format_hex_line`] joined by
+/// `\n`. No trailing newline.
+fn format_hex_dump(bytes: &[u8], start_offset: usize) -> String {
+    let mut out = String::with_capacity(bytes.len() * 4 + 16);
+    for (row_idx, chunk) in bytes.chunks(16).enumerate() {
+        if row_idx > 0 {
+            out.push('\n');
+        }
+        out.push_str(&format_hex_line(start_offset + row_idx * 16, chunk));
+    }
+    out
+}
+
+/// Build the multi-line GitHub-issue-shaped bug report copied to the
+/// clipboard when the user clicks "Copy bug report" on a load-error
+/// placeholder.
+///
+/// Sections:
+/// 1. `## Mod Workbench bug report` — header with `CARGO_PKG_VERSION`.
+/// 2. `## Table` — the failing dispatch name.
+/// 3. `## Category` — the [`ErrorCategory::tag`] for the error.
+/// 4. `## PAZ path` — `gamedata/binary__/client/bin/<filename>` when the
+///    error is a PAZ lookup; omitted otherwise.
+/// 5. `## Error` — code-fenced verbatim error string.
+/// 6. `## Raw bytes` — code-fenced hex dump of up to 256 bytes plus the
+///    total raw_pabgb byte count, OR a one-line "(no raw bytes ...)" note
+///    when extraction also failed.
+fn build_bug_report(
+    dispatch_name: &str,
+    category: ErrorCategory,
+    error_msg: &str,
+    raw_prefix: Option<&[u8]>,
+    raw_byte_count: usize,
+) -> String {
+    let version = env!("CARGO_PKG_VERSION");
+    let mut s = String::with_capacity(2048);
+
+    s.push_str("## Mod Workbench bug report\n\n");
+    s.push_str(&format!("Workbench version: {}\n\n", version));
+
+    s.push_str("## Table\n\n");
+    s.push_str(&format!("`{}`\n\n", dispatch_name));
+
+    s.push_str("## Category\n\n");
+    s.push_str(&format!("{}\n\n", category.tag()));
+
+    if category == ErrorCategory::PazLookup {
+        if let Some(filename) = extract_paz_filename(error_msg) {
+            s.push_str("## PAZ path\n\n");
+            s.push_str(&format!(
+                "`gamedata/binary__/client/bin/{}`\n\n",
+                filename
+            ));
+        }
+    }
+
+    s.push_str("## Error\n\n");
+    s.push_str("```\n");
+    s.push_str(error_msg);
+    if !error_msg.ends_with('\n') {
+        s.push('\n');
+    }
+    s.push_str("```\n\n");
+
+    s.push_str("## Raw bytes\n\n");
+    match raw_prefix {
+        Some(bytes) if !bytes.is_empty() => {
+            s.push_str(&format!(
+                "Total raw_pabgb size: {} bytes. First {} shown.\n\n",
+                raw_byte_count,
+                bytes.len()
+            ));
+            s.push_str("```\n");
+            s.push_str(&format_hex_dump(bytes, 0));
+            s.push('\n');
+            s.push_str("```\n");
+        }
+        _ => {
+            s.push_str(
+                "(no raw bytes captured — PAZ extraction also failed for this table)\n",
+            );
+        }
+    }
+
+    s
 }
 
 /// Format a cell value for display in the table.
@@ -1085,5 +1334,133 @@ mod tests {
         assert!(!walk_strings_match(&deep, "needle", 0));
         // Same string at depth 0 trivially matches.
         assert!(walk_strings_match(&json!("needle"), "needle", 0));
+    }
+
+    // ── ErrorCategory + bug-report helpers ─────────────────────────────────
+
+    #[test]
+    fn classify_error_buckets() {
+        assert_eq!(
+            classify_error("File 'foo.pabgb' not found in gamedata/binary__/client/bin"),
+            ErrorCategory::PazLookup,
+        );
+        assert_eq!(
+            classify_error("Cannot read PAMT at C:/games/CD/0008/0.pamt: not found"),
+            ErrorCategory::GameDataLookup,
+        );
+        assert_eq!(
+            classify_error("Directory 'gamedata/...' not found in 0008/0.pamt"),
+            ErrorCategory::GameDataLookup,
+        );
+        assert_eq!(
+            classify_error("panic while parsing game_play_variable_info: index out of bounds"),
+            ErrorCategory::Panic,
+        );
+        assert_eq!(
+            classify_error("game_play_variable_info: panic — slice index OOB"),
+            ErrorCategory::Panic,
+        );
+        assert_eq!(
+            classify_error("unexpected EOF while reading u32 at offset 0x1234"),
+            ErrorCategory::Parser,
+        );
+    }
+
+    #[test]
+    fn extract_paz_filename_basic() {
+        assert_eq!(
+            extract_paz_filename("File 'iteminfo.pabgb' not found in gamedata/binary__/client/bin"),
+            Some("iteminfo.pabgb"),
+        );
+        assert_eq!(
+            extract_paz_filename("Cannot read PAMT at C:/games/CD/0008/0.pamt: not found"),
+            None,
+        );
+        assert_eq!(extract_paz_filename(""), None);
+    }
+
+    #[test]
+    fn format_hex_line_aligned_for_short_chunk() {
+        // Short chunk should still produce a fixed-width row so the bug
+        // report renders cleanly under a monospace font even when the file
+        // is shorter than 16 bytes.
+        let line = format_hex_line(0x10, &[0x41, 0x42, 0x43]);
+        assert!(line.starts_with("00000010  41 42 43"));
+        // Three bytes = three '..' slots filled, 13 padding slots of `   `,
+        // plus the mid-row spacer between byte 7 and 8.
+        // The ASCII gutter shows 'ABC' at the end.
+        assert!(line.ends_with("ABC"));
+    }
+
+    #[test]
+    fn format_hex_line_full_chunk_contains_mid_spacer() {
+        let bytes: Vec<u8> = (0..16).collect();
+        let line = format_hex_line(0, &bytes);
+        // Byte 7 = 0x07, byte 8 = 0x08. There should be a double-space
+        // between "07 " and "08 " due to the mid-row spacer.
+        assert!(line.contains("07  08 "), "missing mid-row spacer: {}", line);
+    }
+
+    #[test]
+    fn format_hex_dump_multi_row() {
+        let bytes: Vec<u8> = (0..18).collect();
+        let dump = format_hex_dump(&bytes, 0);
+        // Two rows: 0x00..0x0F and 0x10..0x11.
+        let rows: Vec<&str> = dump.split('\n').collect();
+        assert_eq!(rows.len(), 2);
+        assert!(rows[0].starts_with("00000000  "));
+        assert!(rows[1].starts_with("00000010  10 11"));
+    }
+
+    #[test]
+    fn build_bug_report_paz_lookup_includes_path() {
+        let report = build_bug_report(
+            "iteminfo",
+            ErrorCategory::PazLookup,
+            "File 'iteminfo.pabgb' not found in gamedata/binary__/client/bin",
+            None,
+            0,
+        );
+        assert!(report.contains("## Mod Workbench bug report"));
+        assert!(report.contains("Workbench version: "));
+        assert!(report.contains("`iteminfo`"));
+        assert!(report.contains("PAZ lookup"));
+        assert!(report.contains("`gamedata/binary__/client/bin/iteminfo.pabgb`"));
+        assert!(report.contains("```"));
+        assert!(report.contains("(no raw bytes captured"));
+    }
+
+    #[test]
+    fn build_bug_report_panic_with_bytes() {
+        let prefix: Vec<u8> = (0..32).collect();
+        let report = build_bug_report(
+            "game_play_variable_info",
+            ErrorCategory::Panic,
+            "panic while parsing game_play_variable_info: slice OOB",
+            Some(&prefix),
+            5_242_880,
+        );
+        // No PAZ path section for a panic.
+        assert!(!report.contains("## PAZ path"));
+        // Hex dump section exists with both the size header and the
+        // first row offset.
+        assert!(report.contains("Total raw_pabgb size: 5242880"));
+        assert!(report.contains("First 32 shown"));
+        assert!(report.contains("00000000  "));
+        assert!(report.contains("Panic"));
+    }
+
+    #[test]
+    fn build_bug_report_parser_no_bytes() {
+        let report = build_bug_report(
+            "skill_info",
+            ErrorCategory::Parser,
+            "unexpected EOF",
+            None,
+            0,
+        );
+        assert!(report.contains("Parser error"));
+        assert!(!report.contains("## PAZ path"));
+        assert!(report.contains("(no raw bytes captured"));
     }
 }

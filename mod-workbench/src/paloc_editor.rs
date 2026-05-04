@@ -69,6 +69,11 @@ pub struct PalocSession {
     pub vanilla: Vec<PalocEntryEdit>,
     /// Search filter (case-insensitive substring on key OR value).
     pub filter: String,
+    /// One-shot scroll target — index into the **filtered** row list. Set
+    /// by global-search "Open in editor" navigation; consumed by the
+    /// table renderer on the first frame after the load lands so the user
+    /// arrives on the matching row.
+    pub pending_scroll_row: Option<usize>,
 }
 
 impl PalocSession {
@@ -195,6 +200,7 @@ pub fn load_paloc(game_dir: &Path, language: &str) -> io::Result<PalocSession> {
         vanilla: entries.clone(),
         entries,
         filter: String::new(),
+        pending_scroll_row: None,
     })
 }
 

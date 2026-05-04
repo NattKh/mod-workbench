@@ -2110,7 +2110,7 @@ dependencies = [
 
 [[package]]
 name = "mod-workbench"
-version = "0.1.0"
+version = "0.6.0"
 dependencies = [
  "base64 0.22.1",
  "directories",

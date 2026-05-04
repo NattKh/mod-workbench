@@ -644,6 +644,130 @@ impl eframe::App for WorkbenchApp {
                         self.state.main_view = MainView::Xml;
                         ui.close_menu();
                     }
+                    let mut is_archive =
+                        matches!(self.state.main_view, MainView::Archive);
+                    if ui
+                        .checkbox(&mut is_archive, "Archive Inspector")
+                        .on_hover_text(
+                            "Browse every PAZ group folder under the game \
+                             directory: inspect PAMT contents, compare PAPGT \
+                             checksums, open files in the hex viewer, and \
+                             remove overlay groups.",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::Archive;
+                        // Drop cached data so opening the view refreshes
+                        // against current disk state instead of showing a
+                        // possibly-stale list from a previous session.
+                        self.state.archive.groups = None;
+                        self.state.archive.detail = None;
+                        self.state.archive.diff = None;
+                        ui.close_menu();
+                    }
+                    let mut is_paatt = matches!(self.state.main_view, MainView::Paatt);
+                    if ui
+                        .checkbox(&mut is_paatt, "PAATT Editor")
+                        .on_hover_text(
+                            "Edit projectile attribute (.paatt) physics — \
+                             radius, shape size, lifetime — for every \
+                             projectile entry in the game. Detects entries \
+                             via the projectileRadius/endEffectLifeTime \
+                             anchor pair pattern.",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::Paatt;
+                        ui.close_menu();
+                    }
+                    let mut is_paac = matches!(self.state.main_view, MainView::Paac);
+                    if ui
+                        .checkbox(&mut is_paac, "PAAC Editor")
+                        .on_hover_text(
+                            "Inspect and edit action-chart (.paac) files — \
+                             character / weapon state machines. Surfaces \
+                             states, inline transitions, condition records, \
+                             identifier strings, and a float-hunt sweep \
+                             that finds plausible gameplay floats near \
+                             identifiers. Apply ships changes as a PAZ \
+                             overlay.",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::Paac;
+                        ui.close_menu();
+                    }
+                    let mut is_pappt = matches!(self.state.main_view, MainView::Pappt);
+                    if ui
+                        .checkbox(&mut is_pappt, "PAPPT Editor")
+                        .on_hover_text(
+                            "Edit the part-prefab table (.pappt) — single \
+                             global registry mapping short part-prefab names \
+                             plus per-character variants to interned string \
+                             IDs. Surfaces primary entries (with their \
+                             child variants) and secondary alias pairs for \
+                             structural editing. Apply ships changes as a \
+                             PAZ overlay (default group 0071).",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::Pappt;
+                        ui.close_menu();
+                    }
+                    let mut is_pamhc = matches!(self.state.main_view, MainView::Pamhc);
+                    if ui
+                        .checkbox(&mut is_pamhc, "PAMHC Editor")
+                        .on_hover_text(
+                            "Edit the model-property header collection \
+                             (.pamhc) — single per-build registry of \
+                             5 typed/byte sections behind an opaque header. \
+                             Section A is exposed as an editable u32 array; \
+                             sections B/C/D/E are shown as paged hex \
+                             (use the Binary Inspector for byte-level edits). \
+                             Apply ships changes as a PAZ overlay (default \
+                             group 0072).",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::Pamhc;
+                        ui.close_menu();
+                    }
+                    let mut is_binary_inspector =
+                        matches!(self.state.main_view, MainView::BinaryInspector);
+                    if ui
+                        .checkbox(&mut is_binary_inspector, "Binary Inspector")
+                        .on_hover_text(
+                            "Generic byte-level editor for sequencer schedule \
+                             (.paschedule / .paschedulepath / .paschedulectx), \
+                             stage header (.paseqh), and UI animation init \
+                             (.uianiminit) files. Browse PAZ, build \
+                             find/replace byte patches against any of those \
+                             extensions, deploy as a PAZ overlay. Patch JSON \
+                             is interchangeable with the PASEQ editor.",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::BinaryInspector;
+                        ui.close_menu();
+                    }
+                    let mut is_global_search =
+                        matches!(self.state.main_view, MainView::GlobalSearch);
+                    if ui
+                        .checkbox(&mut is_global_search, "Global Search")
+                        .on_hover_text(
+                            "Search for a string across multiple game-data \
+                             formats — PABGB tables, PALOC localization, XML \
+                             configs, .paatt / .paac / .pappt / .pamhc \
+                             files, and an opt-in byte-level scan over \
+                             schedule/AI/level files. Per-format toggles \
+                             scope the scan; results group by source and \
+                             jump into the appropriate editor on click.",
+                        )
+                        .clicked()
+                    {
+                        self.state.main_view = MainView::GlobalSearch;
+                        ui.close_menu();
+                    }
                     let mut is_library =
                         matches!(self.state.main_view, MainView::Library);
                     if ui
@@ -783,51 +907,81 @@ impl eframe::App for WorkbenchApp {
         // a second mutable borrow on `state` from inside the closure.
         let mut lint_action: Option<ui::lint_panel::LintAction> = None;
 
-        // Central panel content depends on the active view.
-        egui::CentralPanel::default().show(ctx, |ui| match self.state.main_view {
-            MainView::PabgbTables => {
-                ui::tab_bar::show(ui, &mut self.state);
-                ui.separator();
-                if self.state.active_tab_idx.is_some() {
-                    ui::entry_table::show(ui, &mut self.state);
-                } else {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("Select a table from the left panel");
-                    });
+        // Central panel content depends on the active view. Render the
+        // top-of-panel view-switch tab bar first so every MainView is one
+        // click away regardless of which view is currently active. The
+        // existing View menu in the menu bar still works in parallel —
+        // the tab bar is the primary surface for new users / quick
+        // switches, the menu remains for muscle memory.
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui::view_tab_bar::show(ui, &mut self.state);
+            ui.separator();
+            match self.state.main_view {
+                MainView::PabgbTables => {
+                    ui::tab_bar::show(ui, &mut self.state);
+                    ui.separator();
+                    if self.state.active_tab_idx.is_some() {
+                        ui::entry_table::show(ui, &mut self.state);
+                    } else {
+                        ui.centered_and_justified(|ui| {
+                            ui.label("Select a table from the left panel");
+                        });
+                    }
                 }
-            }
-            MainView::Paloc => {
-                ui::paloc_panel::show(ui, &mut self.state);
-            }
-            MainView::Paseq => {
-                ui::paseq_panel::show(ui, &mut self.state);
-            }
-            MainView::Backups => {
-                ui::backup_panel::show(ui, &mut self.state);
-            }
-            MainView::Conflicts => {
-                ui::conflict_panel::show(ui, &mut self.state);
-            }
-            MainView::Lint => {
-                // The panel returns the user's intent; we apply it after
-                // the closure ends so we don't take a second mutable
-                // borrow on `state` from inside the panel.
-                lint_action = ui::lint_panel::show(ui, &mut self.state);
-            }
-            MainView::Settings => {
-                ui::settings_panel::show(ui, &mut self.state);
-            }
-            MainView::Library => {
-                ui::library_panel::show(ui, &mut self.state);
-            }
-            MainView::Templates => {
-                ui::templates_panel::show(ui, &mut self.state);
-            }
-            MainView::Wizards => {
-                ui::wizards_panel::show(ui, &mut self.state);
-            }
-            MainView::Xml => {
-                ui::xml_panel::show(ui, &mut self.state);
+                MainView::Paloc => {
+                    ui::paloc_panel::show(ui, &mut self.state);
+                }
+                MainView::Paseq => {
+                    ui::paseq_panel::show(ui, &mut self.state);
+                }
+                MainView::Backups => {
+                    ui::backup_panel::show(ui, &mut self.state);
+                }
+                MainView::Conflicts => {
+                    ui::conflict_panel::show(ui, &mut self.state);
+                }
+                MainView::Lint => {
+                    // The panel returns the user's intent; we apply it after
+                    // the closure ends so we don't take a second mutable
+                    // borrow on `state` from inside the panel.
+                    lint_action = ui::lint_panel::show(ui, &mut self.state);
+                }
+                MainView::Settings => {
+                    ui::settings_panel::show(ui, &mut self.state);
+                }
+                MainView::Library => {
+                    ui::library_panel::show(ui, &mut self.state);
+                }
+                MainView::Templates => {
+                    ui::templates_panel::show(ui, &mut self.state);
+                }
+                MainView::Wizards => {
+                    ui::wizards_panel::show(ui, &mut self.state);
+                }
+                MainView::Xml => {
+                    ui::xml_panel::show(ui, &mut self.state);
+                }
+                MainView::Archive => {
+                    ui::archive_panel::show(ui, &mut self.state);
+                }
+                MainView::Paatt => {
+                    ui::paatt_panel::show(ui, &mut self.state);
+                }
+                MainView::Paac => {
+                    ui::paac_panel::show(ui, &mut self.state);
+                }
+                MainView::Pappt => {
+                    ui::pappt_panel::show(ui, &mut self.state);
+                }
+                MainView::Pamhc => {
+                    ui::pamhc_panel::show(ui, &mut self.state);
+                }
+                MainView::BinaryInspector => {
+                    ui::binary_inspector_panel::show(ui, &mut self.state);
+                }
+                MainView::GlobalSearch => {
+                    ui::global_search_panel::show(ui, &mut self.state);
+                }
             }
         });
 
@@ -1123,6 +1277,52 @@ impl WorkbenchApp {
                     self.state
                         .toasts
                         .info(format!("Global search complete — {} hit(s).", count));
+                }
+            }
+            // Multi-format global search panel — independent flow from the
+            // per-table-list quick scan above. Stale replies (request_id
+            // mismatch) are dropped silently.
+            worker::Reply::MultiFormatHit { request_id, hit } => {
+                if request_id == self.state.multi_search.request_id {
+                    self.state.multi_search.hits.push(hit);
+                }
+            }
+            worker::Reply::MultiFormatProgress {
+                request_id,
+                message,
+            } => {
+                if request_id == self.state.multi_search.request_id {
+                    // Only bump the stuck-detector timestamp when the
+                    // message text actually changes — otherwise the
+                    // worker emitting the same "scanning PALOC..."
+                    // string repeatedly would mask a real freeze.
+                    if self.state.multi_search.progress_message != message {
+                        self.state.multi_search.progress_updated_at =
+                            Some(std::time::Instant::now());
+                    }
+                    self.state.multi_search.progress_message = message;
+                }
+            }
+            worker::Reply::MultiFormatComplete {
+                request_id,
+                error,
+                total_hits,
+            } => {
+                if request_id == self.state.multi_search.request_id {
+                    self.state.multi_search.in_progress = false;
+                    self.state.multi_search.error = error;
+                    self.state.multi_search.progress_message = format!(
+                        "Done — {} hit(s).",
+                        total_hits
+                    );
+                    // Clear the stuck-detector clock — terminal reply
+                    // means the panel is healthy, no need to keep
+                    // measuring staleness against an idle scan.
+                    self.state.multi_search.progress_updated_at = None;
+                    self.state.toasts.info(format!(
+                        "Multi-format search complete — {} hit(s).",
+                        total_hits
+                    ));
                 }
             }
         }

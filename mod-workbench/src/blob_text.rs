@@ -96,6 +96,84 @@ pub fn extract_from_base64(b64: &str) -> Option<Vec<ExtractedText>> {
     B64.decode(b64.trim()).ok().map(|bytes| extract_text_runs(&bytes))
 }
 
+/// Pull UTF-16 LE printable / CJK runs out of `bytes`.
+///
+/// Walks `bytes` in 2-byte little-endian pairs, decoding each as a `u16`
+/// codepoint. Surrogate pairs (and any unpaired surrogate halves) are
+/// treated as run terminators — fine for in-game Hangul / Kana / Hanzi
+/// (all BMP) but means non-BMP characters (e.g. emoji, CJK Extension B)
+/// won't be extracted. The minimum-length rule (>= 4 chars) is stricter
+/// than the UTF-8 path because well-aligned `0x00 0xAC` byte pairs are
+/// far more common in arbitrary binary data than valid 3-byte UTF-8
+/// hangul, and 4-char floors knock out the noise.
+///
+/// Each surviving run carries the byte offset at which it started — the
+/// caller can use it to seek back into the original binary file.
+pub fn extract_utf16le_text_runs(bytes: &[u8]) -> Vec<ExtractedText> {
+    const MIN_UTF16_RUN_CHARS: usize = 4;
+    let mut runs = Vec::new();
+    if bytes.len() < 2 {
+        return runs;
+    }
+
+    // Walk every 2-byte LE start position. We do NOT step by 2 — UTF-16
+    // strings inside a binary file may be aligned at any byte boundary
+    // (PARC fields don't enforce 2-byte alignment for embedded wide
+    // strings), so we try every starting offset, advance to the run
+    // end, and resume scanning past the terminator.
+    let mut i = 0usize;
+    while i + 2 <= bytes.len() {
+        let start = i;
+        let mut current = String::new();
+        let mut has_cjk = false;
+        let mut cursor = i;
+        loop {
+            if cursor + 2 > bytes.len() {
+                break;
+            }
+            let unit = u16::from_le_bytes([bytes[cursor], bytes[cursor + 1]]);
+            // Surrogate halves can't be decoded standalone — terminate
+            // the run and let the outer loop resume past the offending
+            // pair. (Don't try to consume a surrogate pair: rare in PA
+            // data and the extra logic adds risk for almost no gain.)
+            if (0xD800..=0xDFFF).contains(&unit) {
+                break;
+            }
+            // Safe: any non-surrogate u16 is a valid BMP codepoint.
+            let ch = match char::from_u32(unit as u32) {
+                Some(c) => c,
+                None => break,
+            };
+            if !is_printable_or_cjk(ch) {
+                break;
+            }
+            if is_cjk(ch) {
+                has_cjk = true;
+            }
+            current.push(ch);
+            cursor += 2;
+        }
+        let char_count = current.chars().count();
+        if char_count >= MIN_UTF16_RUN_CHARS {
+            runs.push(ExtractedText {
+                offset: start,
+                text: current,
+                has_cjk,
+            });
+            // Resume past the run we just committed so we don't emit
+            // overlapping windows of the same run from successive byte
+            // offsets.
+            i = cursor.max(start + 1);
+        } else {
+            // No run accepted from this offset — advance one byte and
+            // keep scanning. Stepping by 1 (not 2) catches runs that
+            // happen to live on odd byte offsets.
+            i = start + 1;
+        }
+    }
+    runs
+}
+
 /// Quick yes/no: does this string look like base64-encoded data we should try
 /// to decode? The check is rough — base64 chars only, length divisible by 4,
 /// at least a few hundred chars to avoid noise on short numeric-looking strings.
@@ -111,7 +189,7 @@ pub fn looks_like_blob_base64(s: &str) -> bool {
 }
 
 /// Printable ASCII (excluding control chars except tab/newline) OR any CJK char.
-fn is_printable_or_cjk(c: char) -> bool {
+pub fn is_printable_or_cjk(c: char) -> bool {
     if is_cjk(c) {
         return true;
     }
@@ -125,7 +203,7 @@ fn is_printable_or_cjk(c: char) -> bool {
 }
 
 /// Hangul / Kana / Hanzi (CJK Unified Ideographs + ext A) detection.
-fn is_cjk(c: char) -> bool {
+pub fn is_cjk(c: char) -> bool {
     let cp = c as u32;
     // Hangul Syllables.
     (0xAC00..=0xD7A3).contains(&cp)
@@ -196,5 +274,51 @@ mod tests {
         assert!(is_cjk('あ'));
         assert!(!is_cjk('a'));
         assert!(!is_cjk('5'));
+    }
+
+    /// Encode a `&str` as a UTF-16 LE byte vec for use in tests. Skips
+    /// any non-BMP code points (the helper itself doesn't extract them
+    /// either, so they'd never round-trip).
+    fn utf16le_bytes(s: &str) -> Vec<u8> {
+        let mut out = Vec::with_capacity(s.len() * 2);
+        for ch in s.encode_utf16() {
+            out.extend_from_slice(&ch.to_le_bytes());
+        }
+        out
+    }
+
+    #[test]
+    fn extracts_utf16le_korean_run() {
+        // Embed a Korean phrase as UTF-16 LE between unrelated padding
+        // bytes so the extractor has to find the run by walking.
+        let mut bytes = vec![0x00, 0x00, 0x12, 0x34];
+        bytes.extend_from_slice(&utf16le_bytes("전기 속성"));
+        // Run terminator — a non-printable byte pair.
+        bytes.extend_from_slice(&[0xFF, 0xFE]);
+        bytes.extend_from_slice(&[0x01, 0x02]);
+        let runs = extract_utf16le_text_runs(&bytes);
+        assert!(
+            runs.iter().any(|r| r.text.contains("전기 속성") && r.has_cjk),
+            "expected to find UTF-16 LE Korean run, got {:?}",
+            runs
+        );
+    }
+
+    #[test]
+    fn rejects_utf16le_short_run() {
+        // 2-char Korean run is below the MIN_UTF16_RUN_CHARS threshold
+        // (which is 4 chars to keep false positives down) and must be
+        // rejected so we don't flood the user with random byte pairs.
+        let mut bytes = vec![0x00, 0x00];
+        bytes.extend_from_slice(&utf16le_bytes("전기"));
+        bytes.extend_from_slice(&[0xFF, 0xFE]);
+        let runs = extract_utf16le_text_runs(&bytes);
+        // The 2-char Korean run must not appear; if any other runs
+        // came out (e.g. the leading zeros), they don't contain `전기`.
+        assert!(
+            runs.iter().all(|r| !r.text.contains("전기")),
+            "2-char run should be filtered out, got {:?}",
+            runs
+        );
     }
 }

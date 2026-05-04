@@ -19,7 +19,7 @@
 
 use std::path::PathBuf;
 
-use crate::state::AppState;
+use crate::state::{AppState, PendingNav};
 use crate::xml_editor::{self, XmlPazEntry};
 use crate::xml_patcher::{self, XmlNode, XmlOp, XmlPatch, XmlTree};
 
@@ -128,6 +128,7 @@ impl OpKind {
 
 /// Render the XML panel.
 pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
+    consume_pending_nav(state);
     ui.horizontal(|ui| {
         ui.heading("XML Editor");
         ui.separator();
@@ -533,6 +534,39 @@ fn file_picker(ui: &mut egui::Ui, state: &mut AppState) {
             .color(egui::Color32::from_rgb(140, 200, 140)),
         );
     }
+}
+
+/// Drain a pending [`PendingNav::Xml`] request and load the matching
+/// file. Other variants stay queued so the right editor sees them.
+///
+/// The XML editor force-switches to Tree Editor mode on a nav so the
+/// user lands on the document, not the legacy patch-builder shell.
+fn consume_pending_nav(state: &mut AppState) {
+    let Some(PendingNav::Xml {
+        paz_group,
+        dir_path,
+        filename,
+    }) = state.pending_global_nav.as_ref().cloned()
+    else {
+        return;
+    };
+    state.pending_global_nav = None;
+
+    state.xml.mode = XmlMode::TreeEditor;
+
+    // Already loaded? Nothing to do.
+    if let Some(cur) = state.xml.current_entry.as_ref() {
+        if cur.group == paz_group && cur.dir_path == dir_path && cur.filename == filename {
+            return;
+        }
+    }
+
+    let entry = XmlPazEntry {
+        group: paz_group,
+        dir_path,
+        filename,
+    };
+    load_xml_from_paz(state, &entry);
 }
 
 fn load_xml_from_paz(state: &mut AppState, entry: &XmlPazEntry) {

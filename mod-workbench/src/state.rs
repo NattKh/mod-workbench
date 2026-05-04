@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::backup::Snapshot;
@@ -16,6 +18,12 @@ use crate::templates::Template;
 use crate::toast;
 use crate::ui::command_palette::CommandPalette;
 use crate::ui::metadata_dialog::MetadataDialog;
+use crate::ui::archive_panel::ArchiveSession;
+use crate::ui::binary_inspector_panel::BinaryInspectorSession;
+use crate::ui::paac_panel::PaacSession;
+use crate::ui::paatt_panel::PaattSession;
+use crate::ui::pamhc_panel::PamhcSession;
+use crate::ui::pappt_panel::PapptSession;
 use crate::ui::paseq_panel::PaseqSession;
 use crate::ui::templates_panel::TemplatesPanelState;
 use crate::ui::xml_panel::XmlSession;
@@ -52,6 +60,41 @@ use crate::worker;
 /// stored as plain XML inside PAZ archives. Loads a target file, runs a
 /// list of slash-path-addressed mutation ops, and previews / saves /
 /// deploys the result.
+/// `Archive` shows the PAZ archive inspector ([`crate::ui::archive_panel`])
+/// — read-only view that lists every numeric PAZ group under the game
+/// directory, drills into each group's PAMT, exposes Open in Hex for any
+/// file, and surfaces a Remove Overlay action with confirmation.
+/// `Paatt` shows the projectile-attribute editor ([`crate::ui::paatt_panel`])
+/// — picks `.paatt` files from PAZ, lists their physics-projectile entries
+/// (radius, shape, lifetime), and ships edits via a PAZ overlay.
+/// `Paac` shows the action-chart editor ([`crate::ui::paac_panel`]) — picks
+/// `.paac` files from PAZ, surfaces states / transitions / conditions /
+/// strings / float-hunt sweeps for editing, and ships edits via a PAZ
+/// overlay (default group `0067`, distinct from paatt's `0066`).
+/// `Pappt` shows the part-prefab table editor ([`crate::ui::pappt_panel`])
+/// — picks `.pappt` files from PAZ (typically just
+/// `character/bin__/partprefabtable.pappt`), surfaces the structured
+/// primary entries (with their child variants) and secondary alias
+/// pairs, and ships edits via a PAZ overlay (default group `0071`,
+/// one above the XML editor's `0070`).
+/// `Pamhc` shows the model-property header collection editor
+/// ([`crate::ui::pamhc_panel`]) — picks `.pamhc` files from PAZ
+/// (typically just `miscellaneous/modelpropertyheadercollection.pamhc`),
+/// surfaces the 5-section container (section A as a `u32` array,
+/// sections B/C/D/E as opaque hex views), and ships edits via a PAZ
+/// overlay (default group `0072`, one above pappt's `0071`).
+/// `BinaryInspector` shows the generic byte-level inspector
+/// ([`crate::ui::binary_inspector_panel`]) for sequencer schedule
+/// (`.paschedule` / `.paschedulepath` / `.paschedulectx`), stage header
+/// (`.paseqh`), and UI animation init (`.uianiminit`) files. Mirrors the
+/// PASEQ Editor mode but scans every numeric PAZ group and ships into
+/// overlay group `0069`.
+/// `GlobalSearch` shows the multi-format search panel
+/// ([`crate::ui::global_search_panel`]) — searches a substring across
+/// every supported format (PABGB, PALOC, XML, PAATT, PAAC, PAPPT, PAMHC,
+/// and binary byte-level scans across schedule/AI/etc. extensions),
+/// with per-format toggles to scope the scan and per-hit "Open in editor"
+/// actions that switch [`AppState::main_view`] to the appropriate editor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MainView {
     PabgbTables,
@@ -65,6 +108,13 @@ pub enum MainView {
     Templates,
     Wizards,
     Xml,
+    Archive,
+    Paatt,
+    Paac,
+    Pappt,
+    Pamhc,
+    BinaryInspector,
+    GlobalSearch,
 }
 
 pub struct AppState {
@@ -243,6 +293,130 @@ pub struct AppState {
     /// Persistent state for the XML patcher view ([`crate::ui::xml_panel`]).
     /// Single-document — only one patch is open at a time.
     pub xml: XmlSession,
+    /// Persistent state for the PAZ archive inspector
+    /// ([`crate::ui::archive_panel`]). Holds the cached group list, the
+    /// currently-drilled-in detail, and pending confirmation flags. Owned
+    /// by [`AppState`] so navigating away and back preserves the user's
+    /// scroll / selection.
+    pub archive: ArchiveSession,
+    /// Persistent state for the projectile-attribute editor
+    /// ([`crate::ui::paatt_panel`]). Single-document — only one .paatt
+    /// is open at a time, but the picker cache + selection survive view
+    /// switches.
+    pub paatt: PaattSession,
+    /// Persistent state for the action-chart editor
+    /// ([`crate::ui::paac_panel`]). Single-document — only one .paac is
+    /// open at a time, but the picker cache + view selection + edit
+    /// state survive view switches.
+    pub paac: PaacSession,
+    /// Persistent state for the part-prefab table editor
+    /// ([`crate::ui::pappt_panel`]). Single-document — only one .pappt
+    /// is open at a time, but the picker cache + sub-tab selection +
+    /// per-entry filters survive view switches.
+    pub pappt: PapptSession,
+    /// Persistent state for the model-property header collection
+    /// editor ([`crate::ui::pamhc_panel`]). Single-document — only one
+    /// .pamhc is open at a time, but the picker cache + sub-tab
+    /// selection + per-section hex view positions survive view
+    /// switches.
+    pub pamhc: PamhcSession,
+    /// Persistent state for the binary inspector view
+    /// ([`crate::ui::binary_inspector_panel`]). Holds the cached PAZ
+    /// scan, currently-loaded file bytes, in-progress patch document,
+    /// and per-extension visibility filters. Owned by [`AppState`] so
+    /// switching views preserves the session.
+    pub binary_inspector: BinaryInspectorSession,
+    /// Persistent state for the multi-format global search panel
+    /// ([`crate::ui::global_search_panel`]). Independent of
+    /// [`Self::global_search`] (the per-PABGB-table-list quick-scan
+    /// checkbox) so the two flows don't interfere.
+    pub multi_search: MultiFormatSearchSession,
+    /// Pending navigation request from the global search panel to a
+    /// non-PABGB editor. Mirrors the `pending_xref_nav` pattern (which
+    /// only handles PABGB cross-references): the search panel switches
+    /// `main_view` and writes the target here, the destination editor
+    /// reads + `take()`s on its first draw to dispatch the load and
+    /// (where applicable) position the cursor / scroll.
+    ///
+    /// `None` whenever no jump is pending. Always consumed via
+    /// [`Option::take`] so a stale request can't fire twice.
+    pub pending_global_nav: Option<PendingNav>,
+}
+
+/// A pending navigation request raised by the global search panel.
+///
+/// Each variant carries enough information for the matching editor to
+/// load the targeted file (where it isn't already loaded) and, where
+/// the editor supports it, position the user on the matching item.
+///
+/// The `Binary` variant is intentionally shared by `HitSource::Binary`,
+/// `HitSource::JenkinsHash`, and `HitSource::HexPattern` — all three
+/// land in the binary inspector and the only datum the editor needs is
+/// the extension + paz path + byte offset.
+#[derive(Debug, Clone)]
+pub enum PendingNav {
+    /// Switch the PALOC editor to `lang` and scroll the row whose
+    /// `unk_id` matches `hash_id` into view.
+    Paloc {
+        /// Language code (e.g. `"eng"`). Maps directly into
+        /// [`AppState::paloc_language`] before triggering a load.
+        lang: String,
+        /// `unk_id` of the entry to highlight. Looked up against
+        /// [`PalocSession::entries`] and turned into a row scroll target.
+        hash_id: u64,
+    },
+    /// Load the XML file at the given PAZ path and surface it in the
+    /// XML editor. PAZ path is the triple `(group, dir_path, filename)`
+    /// matching [`crate::xml_editor::XmlPazEntry`].
+    Xml {
+        paz_group: String,
+        dir_path: String,
+        filename: String,
+    },
+    /// Load the `.paatt` file at the given PAZ path. No byte-offset
+    /// scroll yet — the panel surfaces detected physics entries, not
+    /// arbitrary offsets, and the worker's `HitSource::Paatt` variant
+    /// doesn't carry a byte offset.
+    Paatt {
+        paz_group: String,
+        dir_path: String,
+        filename: String,
+    },
+    /// Load the `.paac` file at the given PAZ path. The panel surfaces
+    /// states / transitions / strings / float-hunt sweeps, not raw
+    /// offsets — `HitSource::Paac` doesn't carry one either.
+    Paac {
+        paz_group: String,
+        dir_path: String,
+        filename: String,
+    },
+    /// Load the `.pappt` file at the given PAZ path. Edits go through
+    /// structured Primary / Secondary tables, so no byte-offset
+    /// positioning is required.
+    Pappt {
+        paz_group: String,
+        dir_path: String,
+        filename: String,
+    },
+    /// Load the `.pamhc` file at the given PAZ path. Edits go through
+    /// per-section tables / hex sub-views, so no single-offset
+    /// positioning is required.
+    Pamhc {
+        paz_group: String,
+        dir_path: String,
+        filename: String,
+    },
+    /// Load the binary file at the given PAZ path into the binary
+    /// inspector and (when `byte_offset` is `Some`) jump the hex view
+    /// to that offset. Used for raw byte hits, Jenkins-hash hits, and
+    /// hex-pattern hits — all three land in the same editor.
+    BinaryInspector {
+        ext: String,
+        paz_group: String,
+        dir_path: String,
+        filename: String,
+        byte_offset: Option<usize>,
+    },
 }
 
 #[derive(Clone)]
@@ -464,6 +638,232 @@ impl Default for GlobalSearchSession {
     }
 }
 
+/// One of the file formats the multi-format global search can scan.
+///
+/// Each variant maps to a worker-side handler that walks the format's
+/// PAZ files and emits hits. The UI lists every variant in the format
+/// toggle row with a one-line `note()` so the user knows which scans
+/// are cheap vs slow before kicking off a run.
+///
+/// Independent from the on-the-fly per-table-list quick scan
+/// ([`GlobalSearchSession`]) — those two flows live side-by-side and
+/// don't share state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SearchFormat {
+    /// Every PABGB table in the registry. Reuses the same matcher as
+    /// the quick-scan checkbox, so hits look identical.
+    Pabgb,
+    /// English + Korean PALOC strings (loaded once at startup).
+    Paloc,
+    /// Plain XML files inside PAZ (configs, dye tables, etc.).
+    Xml,
+    /// `.paatt` projectile/attack-attribute files. Byte-level scan.
+    Paatt,
+    /// `.paac` action-chart files. Byte-level scan.
+    Paac,
+    /// `.pappt` part-prefab tables. Byte-level scan.
+    Pappt,
+    /// `.pamhc` model-property header collection files. Byte-level scan.
+    Pamhc,
+    /// Catch-all byte-level scan over the binary inspector's
+    /// allow-list (schedule / AI / level / etc.). Slowest format —
+    /// thousands of files.
+    BinaryByte,
+}
+
+impl SearchFormat {
+    /// Every variant in display order. Used by the UI to render the
+    /// format toggle grid.
+    pub fn all() -> &'static [SearchFormat] {
+        &[
+            SearchFormat::Pabgb,
+            SearchFormat::Paloc,
+            SearchFormat::Xml,
+            SearchFormat::Paatt,
+            SearchFormat::Paac,
+            SearchFormat::Pappt,
+            SearchFormat::Pamhc,
+            SearchFormat::BinaryByte,
+        ]
+    }
+
+    /// Short label shown next to the toggle checkbox.
+    pub fn display_name(self) -> &'static str {
+        match self {
+            SearchFormat::Pabgb => "PABGB Tables",
+            SearchFormat::Paloc => "PALOC (Localization)",
+            SearchFormat::Xml => "XML Configs",
+            SearchFormat::Paatt => "PAATT (Attributes)",
+            SearchFormat::Paac => "PAAC (Action Charts)",
+            SearchFormat::Pappt => "PAPPT (Part-Prefabs)",
+            SearchFormat::Pamhc => "PAMHC (Model Headers)",
+            SearchFormat::BinaryByte => "Binary Byte Scan",
+        }
+    }
+
+    /// Helper note shown below / next to the toggle. Tells the user
+    /// roughly how big and how slow this format is so they can scope
+    /// the scan up front.
+    pub fn note(self) -> &'static str {
+        match self {
+            SearchFormat::Pabgb => "122 tables, ~265K entries — moderate",
+            SearchFormat::Paloc => "localization (en/kr) — fast",
+            SearchFormat::Xml => "config XML — fast",
+            SearchFormat::Paatt => "physics/projectile attrs — small",
+            SearchFormat::Paac => "action charts — small",
+            SearchFormat::Pappt => "character part-prefab — small",
+            SearchFormat::Pamhc => "model property header — tiny",
+            SearchFormat::BinaryByte => {
+                "byte-level scan across schedule/AI/etc. — SLOW (~4000+ files)"
+            }
+        }
+    }
+}
+
+/// Three flavours of search the multi-format panel supports.
+///
+/// `Text` is the classic substring scan — runs across every format
+/// (PABGB / PALOC / XML / byte files). `Hex` is a raw byte-pattern
+/// scan that only makes sense over binary formats; the UI greys out
+/// the text-only formats while in this mode. `KoreanStrings` walks
+/// every binary file and surfaces every CJK (Hangul / Kana / Hanzi)
+/// text run found inside, in both UTF-8 and UTF-16 LE forms — the
+/// caller's filter (when supplied) is applied to each run's text, not
+/// to whole-file matching, so users can browse the surfaced strings
+/// even when they don't know the exact substring.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchMode {
+    Text,
+    Hex,
+    KoreanStrings,
+}
+
+impl SearchMode {
+    pub fn label(self) -> &'static str {
+        match self {
+            SearchMode::Text => "Text",
+            SearchMode::Hex => "Hex bytes",
+            SearchMode::KoreanStrings => "Korean strings",
+        }
+    }
+}
+
+/// Persistent state for the multi-format global search panel
+/// ([`crate::ui::global_search_panel`]).
+///
+/// Independent of [`GlobalSearchSession`] (the per-PABGB-table-list
+/// quick-scan checkbox) so the two flows don't interfere — the user can
+/// have the quick-scan box off while a deep multi-format scan is in
+/// progress, or vice versa, and neither sees the other's results.
+pub struct MultiFormatSearchSession {
+    /// True while the panel is mounted; reserved for future "auto-scan
+    /// on type" behaviour. Currently the scan kicks off only when the
+    /// user clicks Run, so this stays `true` whenever the panel exists.
+    #[allow(dead_code)]
+    pub enabled: bool,
+    /// Current search query. Edited live by the search box.
+    pub query: String,
+    /// Format scope — one entry per [`SearchFormat`] variant the user
+    /// has ticked. When empty, Run is disabled.
+    pub formats_enabled: HashSet<SearchFormat>,
+    /// Monotonic id bumped each time the user kicks off a fresh scan.
+    /// The worker tags every reply with this id so the UI can discard
+    /// stale results from an earlier query.
+    pub request_id: u64,
+    /// True between Run and `Reply::MultiFormatComplete`.
+    pub in_progress: bool,
+    /// Free-form progress message updated as the worker walks each
+    /// format (e.g. `"scanning PALOC... 0/1"`).
+    pub progress_message: String,
+    /// Accumulated hits in arrival order.
+    pub hits: Vec<crate::worker::MultiFormatHit>,
+    /// First non-fatal error encountered during the run, surfaced as a
+    /// warning banner above the results.
+    pub error: Option<String>,
+    /// Index into `hits` of the row the user has expanded for full
+    /// context. `None` when nothing is expanded.
+    pub expanded_hit: Option<usize>,
+    /// Active search mode — `Text` (classic substring scan) or `Hex`
+    /// (raw byte-pattern scan over binary formats only).
+    pub search_mode: SearchMode,
+    /// User-typed hex pattern when `search_mode == Hex`. Free-form
+    /// (whitespace allowed). Parsed by
+    /// [`crate::worker::parse_hex_pattern`] before submit.
+    pub hex_query: String,
+    /// True when the user has ticked the "Also match Jenkins hash of
+    /// query" checkbox. Hidden in hex mode (doesn't apply to raw
+    /// bytes).
+    pub match_jenkins_hash: bool,
+    /// Two-step confirmation flag for unfiltered Korean-strings scans.
+    ///
+    /// When the user is in `KoreanStrings` mode with an empty filter
+    /// and clicks Run, the first click flips this to `true` and the
+    /// Run button relabels to "Run anyway"; only the second click
+    /// (with the flag already true) actually fires the scan. Reset to
+    /// `false` whenever the filter text changes, the mode changes, or
+    /// a scan completes — so dropping back into the unfiltered state
+    /// re-arms the guard.
+    ///
+    /// Only consulted in `KoreanStrings` mode; in `Text` / `Hex` mode
+    /// the empty-query check already gates Run via `add_enabled`.
+    pub confirm_no_filter: bool,
+    /// Wall-clock instant the `progress_message` was last updated. Used
+    /// by the panel's "looks stuck" detector — when `in_progress` is
+    /// true but this timestamp hasn't advanced for >5 s, the panel
+    /// surfaces a hint pointing at the Reset button.
+    ///
+    /// `None` when no scan has run this session, or when a scan has
+    /// just completed (so the next Run starts fresh).
+    pub progress_updated_at: Option<Instant>,
+    /// Shared cancellation flag for the in-flight `MultiFormatSearch`
+    /// job. The UI clones this `Arc` into the job before submitting;
+    /// the worker's per-format scanners check it at iteration
+    /// boundaries (file enumerated, entry walked) and return early
+    /// when it flips to `true`.
+    ///
+    /// Rotated to a fresh `Arc::new(AtomicBool::new(false))` by
+    /// [`crate::ui::global_search_panel::kick_scan`] before each new
+    /// submit — never reused, so a stale `true` from the previous
+    /// cancel can't short-circuit the next scan.
+    ///
+    /// Set to `true` by [`crate::ui::global_search_panel::cancel_scan`]
+    /// (Cancel button, mode switch, jump-to-editor mid-scan) so the
+    /// worker thread can abandon the scan immediately and process the
+    /// next queued job (LoadTable / Deploy / Restore / etc.) without
+    /// waiting for the search to finish naturally.
+    pub cancel_flag: Arc<AtomicBool>,
+}
+
+impl Default for MultiFormatSearchSession {
+    fn default() -> Self {
+        // Default scope: every fast format on, BinaryByte off so the
+        // user has to opt in to the slow scan.
+        let mut formats_enabled: HashSet<SearchFormat> = HashSet::new();
+        for f in SearchFormat::all() {
+            if !matches!(f, SearchFormat::BinaryByte) {
+                formats_enabled.insert(*f);
+            }
+        }
+        Self {
+            enabled: true,
+            query: String::new(),
+            formats_enabled,
+            request_id: 0,
+            in_progress: false,
+            progress_message: String::new(),
+            hits: Vec::new(),
+            error: None,
+            expanded_hit: None,
+            search_mode: SearchMode::Text,
+            hex_query: String::new(),
+            match_jenkins_hash: false,
+            confirm_no_filter: false,
+            progress_updated_at: None,
+            cancel_flag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+}
+
 pub struct ChangeTracker {
     /// Maps entry index -> set of changed field names
     pub modified: HashMap<u64, HashSet<String>>,
@@ -573,6 +973,14 @@ impl AppState {
             cjk_report_pending: None,
             localization: cached_localization,
             xml: XmlSession::default(),
+            archive: ArchiveSession::default(),
+            paatt: PaattSession::default(),
+            paac: PaacSession::default(),
+            pappt: PapptSession::default(),
+            pamhc: PamhcSession::default(),
+            binary_inspector: BinaryInspectorSession::default(),
+            multi_search: MultiFormatSearchSession::default(),
+            pending_global_nav: None,
         }
     }
 

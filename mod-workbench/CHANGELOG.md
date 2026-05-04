@@ -1,5 +1,338 @@
 # Mod Workbench — Changelog
 
+## v0.6.0 — global search, top tab bar, real cancellation (2026-05-04)
+
+This release turns the workbench into a *findable* tool. The
+View menu is replaced (in parallel — menu still works) by a top
+tab bar so all 18 views are one click away. A new Global Search
+panel scans every supported format for a query, with three
+modes: text substring, raw hex bytes, and CJK string discovery
+(UTF-8 + UTF-16 LE).
+
+### New: Top tab bar (`src/ui/view_tab_bar.rs`)
+
+Horizontal tab strip at the top of the central panel. Four
+logical groups separated by vertical separators:
+
+- **Data**: PABGB Tables, PALOC, XML, PASEQ, PAATT, PAAC,
+  PAPPT, PAMHC.
+- **Tools**: Archive, Binary Inspector, Global Search.
+- **Workflow**: Library, Templates, Wizards, Lint, Conflicts,
+  Backups.
+- **System**: Settings.
+
+Each button shows the human display name with a one-line
+tooltip. `selectable_value` highlights the active view. The
+existing View menu in the menu bar still works in parallel.
+Side-effects (cache flushes, lazy loads) only fire on the
+click that flips the view, never on steady-state re-renders.
+
+### New: `pamhc` structural editor
+
+Continued from v0.5.0's structural-editor wave. Loader
+`sub_102484E3C` decoded — 28-byte header (8-byte opaque
+preamble + 5 `u32` section sizes), Section A is a `u32`
+array, B/C/D/E are opaque byte ranges. Parser at
+`dmm-parser-rust-only/src/tables/pamhc/` round-trips
+byte-for-byte. 5-tab UI (Section A as `u32` array editor +
+B/C/D/E paged hex viewers, read-only). Default overlay
+group `0072`. 6 unit tests.
+
+### New: Global Search panel (`MainView::GlobalSearch`)
+
+Multi-format search with one shared session. Three search
+modes:
+
+- **Text** — substring search across PABGB tables, PALOC
+  (EN + KR), XML configs, the small-file editors (PAATT /
+  PAAC / PAPPT / PAMHC), and an opt-in byte-level scan of
+  the binary inspector formats (UTF-8 + UTF-16 LE passes).
+- **Hex bytes** — paste hex (`5A 4C 00 00` or `5A4C0000`),
+  the worker memmems for those bytes across binary formats
+  only. Text-only formats greyed out in this mode.
+- **Korean strings** — walks every binary file and surfaces
+  every CJK (Hangul / Kana / Hanzi) text run found inside,
+  in both UTF-8 and UTF-16 LE form. Optional filter narrows
+  by case-insensitive substring on each run's text. Two-step
+  confirmation gate when filter is empty (yellow warning row
+  + "Run anyway" button) to prevent accidental unfiltered
+  scans.
+
+Per-format toggle grid with notes (e.g. *PALOC — fast*,
+*BinaryByte — SLOW (~4000+ files)*) so users can scope the
+scan up front. Each format capped at 500 hits per scan.
+Results group by source format under `CollapsingHeader`s.
+Each hit has a snippet, an expandable rich payload (full
+entry JSON for PABGB, full XML node for XML, paged hex for
+binaries), and an "Open in editor" button.
+
+### New: Jenkins hash search
+
+Optional checkbox in Text mode: *Also match Jenkins hash of
+query (4-byte LE)*. Computes Bob Jenkins `hashlittle` of the
+query (lowercase / uppercase / as-typed, deduped) and adds
+the resulting `u32`s as 4-byte little-endian patterns to the
+binary scan. Catches strings stored as 4-byte hashes — item
+keys, paloc IDs, character keys — which substring search
+completely misses. Reuses
+`dmm_parser_rust_only::crypto::checksum::calculate_checksum`
+with the universal PA seed `0xDEBA1DCD`.
+
+### New: Editor jump-to-file
+
+Clicking "Open in editor" on a hit now actually navigates:
+
+- **PABGB** — full (table loaded + entry pre-positioned).
+- **PALOC** — full (language switched, file loaded, table
+  scrolled to row).
+- **XML** — full (file loaded in tree editor).
+- **PAATT / PAAC / PAPPT / PAMHC** — partial (file loaded;
+  these editors are structural and don't have a global
+  byte offset to position on).
+- **Binary Inspector** — full (extension filter set, file
+  loaded, hex view paged + selected at byte offset). Used
+  for `Binary`, `JenkinsHash`, `HexPattern`, and
+  `KoreanString` hits.
+
+Implementation: new `PendingNav` enum on `AppState`, mirrors
+the existing `pending_xref_nav` pattern. Each editor's draw
+function calls a `consume_pending_nav` helper that takes the
+pending nav and dispatches to that editor's load path.
+
+### New: Real search cancellation
+
+`Worker` is single-threaded — a long Global Search would
+block every other job (LoadTable, Deploy, Restore) for
+minutes until the scan finished. Cancel button used to only
+update UI state, leaving the worker grinding.
+
+Now: `Arc<AtomicBool>` cancel flag shared between the search
+session and the running scan. Every scan loop checks at
+iteration boundaries (per-file, per-entry, per-CJK-run) and
+bails immediately when the flag flips. Triggers:
+
+- **Cancel button** — flips the flag.
+- **Reset button** — flips the flag (and clears results).
+- **Mode selector switch** — flips the flag.
+- **"Open in editor" while a scan is in flight** — auto-flips
+  the flag so the editor's load runs immediately instead of
+  queueing behind the still-running scan. This is the fix
+  for the "Loading character_info... forever" symptom users
+  saw when clicking through search results mid-scan.
+
+The flag is rotated to a fresh `Arc` on each `kick_scan`, so
+a stale `true` from a prior cancel can't kill a new scan
+instantly.
+
+### Search panel hardening
+
+- **Reset button** next to Cancel — bumps `request_id`,
+  clears results / error / progress / expanded-hit /
+  confirm-no-filter, but preserves typed query, hex query,
+  search mode, format toggles, and Jenkins-hash checkbox.
+  Always escapes a stuck panel.
+- **Worker disconnect detection** — `Worker::submit` now
+  returns `bool`. On `false` (channel closed = worker
+  thread died), `kick_scan` immediately resets `in_progress`
+  and surfaces a red toast: *Worker channel closed —
+  restart the workbench.* Replaces the previous silent
+  failure mode that left `in_progress=true` forever.
+- **Stuck-state hint** — after 5+ seconds with no progress
+  message change, an inline yellow warning appears under
+  the spinner: *No progress for Ns — looks stuck. Click
+  Reset above to recover.* Threshold pulled into a named
+  const.
+- **Korean two-step gate clarity** — when the empty-filter
+  guard is armed, the panel renders a high-contrast yellow
+  frame with a clear instruction line. Replaces the
+  easy-to-miss button-label-only signal.
+
+### Extended Binary Inspector coverage
+
+Added 6 extensions to the byte-level allow-list this round:
+
+- `palevel` — level / sector streaming data. Discoverer
+  decoded (`sub_101A0AEB0`) but actual file deserializer is
+  buried in resource-manager `vtable+64` indirection;
+  multi-session RE project. Companion `palevel_xml` already
+  covered by XML editor.
+- `pamhc` — model property header collection. Now has a
+  full structural editor (see above) but stays in the
+  byte-level allow-list as fallback.
+- `pab` — skeletal collision volumes. 3D-adjacent;
+  byte-level only by design. Companion `pab.sockets.xml`
+  already covered by XML editor.
+- `paem` — effect emitter data (borderline 3D — opt-in).
+- `paver` — build version metadata (`meta/0.paver`).
+- `pacpph` — compiled-script header
+  (`objectList.pacpph`).
+
+Total Binary Inspector format count: **20** extensions.
+
+### Format research docs added
+
+- `PALEVEL_PAMHC_PAB_FORMAT_RESEARCH.md` — pamhc fully
+  decoded (loader `sub_102484E3C`); palevel discoverer
+  mapped (`sub_101A0AEB0`) with revised "large effort,
+  defer" assessment after walking
+  `sub_101A01FD4` (recursive ID-stamp, not deserializer)
+  and `sub_101A0978C` (parent-link, not deserializer); pab
+  documented as 3D collision data, recommended to stay
+  byte-level.
+
+### Tests
+
+- 188 passing total, +6 vs v0.5.0 baseline. 2 pre-existing
+  `blob_text` failures unchanged. New tests cover: hex
+  pattern parsing, Jenkins hash variants, byte-pattern
+  search, View menu / tab bar label coverage, worker
+  channel-closed contract, cancel-flag short-circuit
+  (general scan + Korean dispatch), `kick_scan` flag
+  rotation.
+
+## v0.5.0 — non-3D file-format expansion (2026-05-04)
+
+The workbench now covers **every non-3D / non-texture / non-audio
+file format** in Crimson Desert at either structural or byte-level
+fidelity. Eight new editor surfaces, four format research docs, one
+crash-safety net, one persistent-delivery DLL.
+
+### Crash safety
+
+- Wrapped `table_loader::load_table` and the global-search per-table
+  load in `std::panic::catch_unwind`. A parser panic on any pabgb
+  (e.g. the user-reported `game_play_variable_info` crash) now
+  becomes a `Failed to load — panic — <msg>` toast/error instead of
+  a process kill. `describe_panic()` extracts the message from
+  `&'static str` and `String` payloads; non-string payloads fall
+  through to a generic notice.
+
+### New editors (structural)
+
+- **`paatt`** — Crimson Desert physics / projectile attribute file.
+  New `dmm-parser-rust-only/src/tables/paatt/` parser (round-trips
+  byte-for-byte against all 5 sample fixtures from the research
+  folder), `mod-workbench/src/paatt_editor.rs` PAZ I/O, and
+  `src/ui/paatt_panel.rs` UI. Anchor-based field editing aligned
+  with the Python reference (`projectileRadius` / `endEffectLifeTime`
+  pair). Default overlay group `0066`. 4 roundtrip tests.
+- **`paac`** — action chart heuristic walker.
+  `dmm-parser-rust-only/src/tables/paac/` ports the 479-line Python
+  parser faithfully — header, M0%D state markers (Format A/B), inline
+  transitions, 260-byte condition records, identifier strings, float
+  hunt. Counts match the Python reference exactly on all 4 sample
+  files (47 / 374 / 513 / 757 strings). UI has 5 sub-tabs (States /
+  Transitions / Conditions / Strings / Float Hunt). `patch_float`
+  and `patch_transition` write helpers for the editor's mutation
+  path. Default overlay group `0067`. 6 tests including roundtrip
+  parity assertions.
+- **`pappt`** — character part-prefab table. Schema fully captured
+  from the macOS retail binary (`PAPPT_FORMAT_RESEARCH.md`). New
+  parser at `dmm-parser-rust-only/src/tables/pappt/` round-trips
+  cleanly (5 tests covering empty file, max child_count = 255,
+  truncated body, etc.). Two-tab UI (Primary entries with editable
+  child list / Secondary aliases) at `src/ui/pappt_panel.rs`.
+  Default overlay group `0071`.
+- **`pamhc`** — model property header collection
+  (`miscellaneous/modelpropertyheadercollection.pamhc`). Schema
+  reverse-engineered from `sub_102484E3C` in the Mac retail binary —
+  28-byte header (8-byte opaque preamble + 5 `u32` section sizes),
+  Section A is a `u32` array, B/C/D/E are opaque byte ranges. Full
+  decode in `PALEVEL_PAMHC_PAB_FORMAT_RESEARCH.md`. New parser at
+  `dmm-parser-rust-only/src/tables/pamhc/` round-trips byte-for-byte.
+  5-tab UI at `src/ui/pamhc_panel.rs`: Section A as `u32` array
+  editor + B/C/D/E paged hex viewers (read-only with a hint to use
+  Binary Inspector for byte-level edits). Default overlay group
+  `0072`. 6 tests (empty file, alignment-rejection, missing-prologue,
+  round-trip parity).
+
+### New editors (byte-level)
+
+- **PAZ Archive Inspector**. `MainView::Archive` + new
+  `archive_editor.rs` + `ui/archive_panel.rs`. Walks every numeric
+  PAZ group, shows PAPGT registration with checksum verification
+  (red flag on mismatch), file count, total size. Drill-in:
+  per-group PAMT directories + files, Open in Hex, Remove Overlay
+  with confirm, PAPGT-vs-backup diff. 6 tests.
+- **Binary Inspector** (`MainView::BinaryInspector`). Generic
+  byte-level patcher — find/replace patches, hex view, deploy as
+  PAZ overlay. Covers **20 formats** in one panel: schedule family
+  (`paschedule`, `paschedulepath`, `paschedulectx`), sequencer-
+  adjacent (`paseqh`, `uianiminit`), AI (`pai`), character data
+  (`pappt`), declarative (`patag`, `padock`), unknowns (`pabc`,
+  `paccd`, `pasg`, `parg`, `pati`), effect emitters (`paem`),
+  build metadata (`paver`), compiled-script header (`pacpph`),
+  and the new 3D-adjacent borderline cases (`palevel`, `pamhc`,
+  `pab`). Reuses `paseq_editor::BytePatch` / `BytePatchDoc` so
+  JSON patch files interop with the PASEQ editor. Default overlay
+  group `0069`. 5 tests.
+
+### Bug-report polish
+
+- "Copy bug report" button on the table-load error UI. Builds a
+  formatted multi-section report (workbench version, table name,
+  error category from `classify_error()`, full message, PAZ-relative
+  path when applicable, hex dump of first 256 raw pabgb bytes) and
+  copies to clipboard. "First 256 bytes" preview also inline behind
+  a `CollapsingHeader`. 8 tests.
+
+### Format research
+
+Reverse-engineered five file formats from the Mac retail binary
+(image base `0x100000000`, full auto-analysis):
+
+- `PASCHEDULE_FORMAT_RESEARCH.md` — paschedule object 208-byte
+  layout, deserializer at `sub_101677EEC` walked field-by-field.
+  Inner array element format (`sub_1016C2B08`, 40-byte entries) and
+  scheduleContext three-pass loader documented.
+- `PAI_FORMAT_RESEARCH.md` — AI chart envelope, 730-slot dispatch
+  table, `AIPackage` 96-byte payload, full slot-name list (352
+  unique class names — `AIPackage_*`, `AIBranch_*`, `AIState_*`,
+  `AIPathFindDesc_*`, `AIFunction_*`).
+- `PAPPT_FORMAT_RESEARCH.md` — full schema including the 8-byte
+  opaque header, primary/secondary entry layouts, asset_id
+  cross-reference into the engine's intern table.
+- `PATAG_FORMAT_RESEARCH.md` — TagManager class layout
+  (`pa::ReflectDerive<TagManager, ReflectObjectExtension>`,
+  vtable `0x107B0FDF0`), single reflected `_tagElements`
+  ObjectList field at `+0x28/+0x30`.
+- `PALEVEL_PAMHC_PAB_FORMAT_RESEARCH.md` — pamhc fully decoded
+  (loader `sub_102484E3C`); palevel discoverer mapped
+  (`sub_101A0AEB0`) but actual file deserializer deferred — buried
+  in resource-manager `vtable+64` indirection, multi-session RE
+  project; pab documented as 3D skeletal collision data, recommended
+  to stay byte-level.
+
+Plus `FILE_FORMAT_CATALOG.md` — complete extension survey across
+the binary's string table with status per extension and loader
+function addresses for future structural decode work.
+
+### Persistent-delivery infrastructure (in-flight)
+
+`tools/cd-infinite-loading-fix/` — Rust `cdylib` that ships as
+`version.dll`, proxies the host's `version.dll` calls to the system
+DLL, and on `DLL_PROCESS_ATTACH` spawns a worker thread that
+pattern-scans the loaded `CrimsonDesert.exe` image for the matcher
+prologue signature and writes 3 bytes (`B0 01 C3` = `mov al, 1; ret`)
+at the function start. Built clean to a 144 KB DLL. Real-game
+verification still pending.
+
+### Notes
+
+- The `version.dll` proxy and the in-game patch are not yet
+  confirmed in a long play session.
+- The `pai` structural decode walked 2 of 730 slot deserializers;
+  remaining slots graduate from byte-level (Binary Inspector) to
+  structural one at a time as mod use-cases land.
+- The schedule context (`paschedulectx`) loader has three
+  deserialization passes; only the file-level call chain is
+  documented, not the per-pass field schema.
+- 20 new tests added across the four structural editors (paatt,
+  paac, pappt, pamhc) plus test increments in the workbench
+  (171 passing total, +14 vs v0.4.0 baseline; dmm-parser 329
+  passing, +20 vs v0.4.0 baseline). Pre-existing 2 `blob_text`
+  failures unchanged.
+
 ## v0.4.0 — search overhaul: working filter + cross-PABGB scan (2026-05-03)
 
 ### Bug fix: per-table search never narrowed
