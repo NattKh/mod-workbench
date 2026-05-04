@@ -163,6 +163,14 @@ pub struct AppState {
     /// confirm before wiping the overlay group. Cleared when the user
     /// cancels or confirms.
     pub restore_confirm_pending: bool,
+    /// Pre-export warning flag for "As Field JSON v3...". When true, the app
+    /// shows a red-tinted modal pointing out that mod-manager support for
+    /// Field JSON v3 is still rolling out and recommending the Mod Folder
+    /// export instead. Cleared when the user picks Continue / Cancel /
+    /// Switch to Mod Folder. Stays in the codebase until ecosystem support
+    /// catches up — flip the menu wiring back to `begin_export_flow` when
+    /// it's safe to remove.
+    pub dmm_v3_warning_pending: bool,
     /// Command palette state (Ctrl+P toggle). The window is rendered at
     /// the top of `update()` so it overlays everything else; actions
     /// dispatched from the palette route into the normal `action_*`
@@ -466,6 +474,7 @@ impl AppState {
             deploy_confirm_pending: false,
             deploy_followup_modal: None,
             restore_confirm_pending: false,
+            dmm_v3_warning_pending: false,
             command_palette: CommandPalette::default(),
             notes: NoteStore::default(),
             entry_search_focus_pending: false,

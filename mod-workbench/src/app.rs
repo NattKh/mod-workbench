@@ -446,14 +446,19 @@ impl eframe::App for WorkbenchApp {
                                 "Single self-contained .json file with \
                                  modinfo + format=3 + targets[], the schema \
                                  DMM 1.3.3+ ingests. Drop into DMM's mods \
-                                 folder.",
+                                 folder. (Mod manager support is still \
+                                 rolling out — Mod Folder is recommended.)",
                             )
                             .clicked()
                         {
                             ui.close_menu();
-                            self.begin_export_flow(
-                                ui::metadata_dialog::ExportAction::SaveDmm,
-                            );
+                            // Don't go straight to begin_export_flow: warn
+                            // the user first that JSON Field v3 mod-manager
+                            // support is still being rolled out, and point
+                            // them at "As Mod Folder" as the safer choice.
+                            // The modal lets them continue, cancel, or
+                            // switch to the recommended flow.
+                            self.state.dmm_v3_warning_pending = true;
                         }
                     });
 
@@ -851,6 +856,16 @@ impl eframe::App for WorkbenchApp {
         // click-driven flow uninterrupted.
         if self.state.restore_confirm_pending {
             self.render_restore_confirm_modal(ctx);
+        }
+
+        // DMM v3 Field JSON pre-export warning: mod-manager support for
+        // the Field JSON v3 shape is still rolling out at the time of
+        // writing, so we warn the user before they commit to that flow
+        // and point them at the Mod Folder export which is universally
+        // accepted today. Modal stays in the codebase until ecosystem
+        // support catches up.
+        if self.state.dmm_v3_warning_pending {
+            self.render_dmm_v3_warning_modal(ctx);
         }
 
         // Post-deploy follow-up modal: shown after every successful deploy
@@ -2125,6 +2140,126 @@ impl WorkbenchApp {
         if confirm {
             self.state.restore_confirm_pending = false;
             self.action_restore();
+        }
+    }
+
+    /// Pre-export warning shown when the user picks "As Field JSON v3...".
+    /// Mod-manager support for the v3 single-file shape is still rolling
+    /// out across the ecosystem (DMM 1.3.3+ added it; Stacker, Perfect
+    /// Mod Loader, and others are catching up), so we surface a red
+    /// warning and recommend the universally-supported Mod Folder export.
+    /// Three exits:
+    ///   - **Use Mod Folder Instead** — close this, open the metadata
+    ///     dialog with `SaveDmmModFolder` so the user's click flows into
+    ///     the recommended export with no extra navigation.
+    ///   - **Continue anyway** — close this, open the metadata dialog
+    ///     with `SaveDmm` for advanced users who want the JSON shape.
+    ///   - **Cancel** — bail.
+    /// Keep this modal until JSON Field v3 mod-manager support is
+    /// universal, then revert the menu wiring back to a direct
+    /// `begin_export_flow(SaveDmm)` call.
+    fn render_dmm_v3_warning_modal(&mut self, ctx: &egui::Context) {
+        let mut continue_anyway = false;
+        let mut switch_to_folder = false;
+        let mut cancel = false;
+
+        let mut window_open = true;
+        egui::Window::new(
+            egui::RichText::new("⚠ Field JSON v3 — mod manager support rolling out")
+                .color(egui::Color32::from_rgb(230, 80, 80))
+                .strong(),
+        )
+        .open(&mut window_open)
+        .collapsible(false)
+        .resizable(false)
+        .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
+        .default_width(480.0)
+        .show(ctx, |ui| {
+            ui.label(
+                egui::RichText::new(
+                    "Mod managers (DMM, Stacker, Perfect Mod Loader, etc.) \
+                     are currently rolling out support for the Field JSON v3 \
+                     single-file format. Your export may not load yet.",
+                )
+                .color(egui::Color32::from_rgb(230, 80, 80))
+                .strong(),
+            );
+            ui.add_space(6.0);
+            ui.label(
+                egui::RichText::new(
+                    "Recommended: use \"Export as Mod Folder\" instead. \
+                     That format produces a real PAZ overlay folder which \
+                     every mod manager (and the game itself) accepts today.",
+                )
+                .color(egui::Color32::from_rgb(230, 80, 80)),
+            );
+            ui.add_space(6.0);
+            ui.label(
+                egui::RichText::new(
+                    "This warning will stay until ecosystem support is \
+                     universal.",
+                )
+                .weak()
+                .italics(),
+            );
+            ui.add_space(8.0);
+            ui.separator();
+            ui.horizontal(|ui| {
+                if ui.button("Cancel").clicked() {
+                    cancel = true;
+                }
+                ui.with_layout(
+                    egui::Layout::right_to_left(egui::Align::Center),
+                    |ui| {
+                        if ui
+                            .add(egui::Button::new(
+                                egui::RichText::new("Use Mod Folder Instead")
+                                    .color(egui::Color32::from_rgb(140, 220, 140))
+                                    .strong(),
+                            ))
+                            .on_hover_text(
+                                "Close this warning and open the metadata \
+                                 dialog targeting the Mod Folder export — \
+                                 the recommended path.",
+                            )
+                            .clicked()
+                        {
+                            switch_to_folder = true;
+                        }
+                        if ui
+                            .button(
+                                egui::RichText::new("Continue anyway")
+                                    .color(egui::Color32::from_rgb(230, 80, 80)),
+                            )
+                            .on_hover_text(
+                                "Proceed with the Field JSON v3 export. May \
+                                 not load in current mod managers.",
+                            )
+                            .clicked()
+                        {
+                            continue_anyway = true;
+                        }
+                    },
+                );
+            });
+        });
+
+        // Window's titlebar X was clicked → treat as cancel.
+        if !window_open {
+            cancel = true;
+        }
+
+        if cancel {
+            self.state.dmm_v3_warning_pending = false;
+            self.state.status = "JSON Field v3 export cancelled".to_string();
+        }
+        if switch_to_folder {
+            self.state.dmm_v3_warning_pending = false;
+            self.begin_export_flow(ui::metadata_dialog::ExportAction::SaveDmmModFolder);
+        }
+        if continue_anyway {
+            self.state.dmm_v3_warning_pending = false;
+            self.begin_export_flow(ui::metadata_dialog::ExportAction::SaveDmm);
         }
     }
 

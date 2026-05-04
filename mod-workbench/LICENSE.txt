@@ -1,0 +1,736 @@
+# CRIMSON DESERT MOD WORKBENCH LICENSE v1.0
+## (CDMWL v1.0)
+
+**Effective Date: 2026-05-03**
+## A Modified Copyleft License Modeled on the Crimson Desert Modding Tools License v1.0
+
+**Copyright (C) 2026 NattKh. All Rights Reserved.**
+**Embedded `dmm-parser-rust-only` components: Copyright (C) 2026 RicePaddySoftware.**
+
+---
+
+## 0. PREAMBLE
+
+This License ("CDMWL v1.0") governs the **Crimson Desert Mod Workbench**
+(the "Workbench") — a standalone Rust + egui desktop application for
+editing Crimson Desert game data, packaging mods as PAZ overlays, and
+deploying them to a live game install.
+
+The Workbench embeds, as a path dependency, **dmm-parser-rust-only** —
+a fork of `dmm-parser` authored by RicePaddySoftware and licensed under
+the Crimson Desert Modding Tools License v1.0 ("CDMTL v1.0"), the
+canonical text of which is shipped in `dmm-parser-rust-only/LICENSE.txt`
+inside this repository.
+
+This License is structurally modeled on CDMTL v1.0 and is intended to be
+**fully compatible with it**. The Workbench is hereby designated as part
+of the "Authorized Software Suite" under CDMTL v1.0 §1(g), pursuant to
+the integration agreement between NattKh and RicePaddySoftware. Both
+licenses operate together: CDMTL v1.0 governs the embedded parser code,
+CDMWL v1.0 governs the Workbench's own source, and the combined work is
+distributed under both.
+
+This License is **NOT** GPL v3, MIT, Apache 2.0, or any other
+OSI-approved license. Code released under those licenses cannot be
+combined into Covered Work, and Covered Work cannot be relicensed under
+those terms without permission from the License Holders.
+
+The intent of this License is to:
+
+1. Permit free use, modification, and redistribution within the
+   Authorized Software Suite.
+2. Require that derivative works remain open-source and licensed under
+   these same terms.
+3. Prevent unauthorized commercial exploitation of the Workbench, its
+   editor architecture, and the Field JSON v3.1 / Multi-Target Field
+   Patching specification it consumes and produces.
+4. Protect the marks, specifications, and reference implementations of
+   both NattKh and RicePaddySoftware.
+5. Establish enforceable copyright, trademark, and Copyright Management
+   Information (DMCA §1202) protections that platform operators can
+   rely upon when evaluating takedown notices and trademark complaints
+   concerning the Workbench.
+
+---
+
+## 1. DEFINITIONS
+
+**"Covered Work"** means the Crimson Desert Mod Workbench (the "Workbench")
+in source or binary form, including all files in this repository under
+`mod-workbench/`, and any derivative works thereof. The embedded
+`dmm-parser-rust-only` is separately governed by CDMTL v1.0 but, when
+distributed as part of the Workbench, is also Covered Work for purposes
+of this License.
+
+**"License Holders"** means NattKh (in respect of the Workbench) and
+RicePaddySoftware (in respect of the embedded parser). Each License
+Holder retains independent enforcement authority over the portions of
+the Covered Work they authored.
+
+**"Authorized Software Suite"** has the meaning given in CDMTL v1.0 §1
+and includes, by virtue of CDMTL §1(g) designation, the Workbench.
+
+**"Field JSON Specification"** means the Field JSON v3, v3.1, or any
+subsequent versioned format authored by RicePaddySoftware for describing
+field-level modifications to Crimson Desert game archives. The Workbench
+consumes and produces this specification under the integration grant
+that places it within the Authorized Software Suite.
+
+**"Independent Tool"** means software that is NOT part of the Authorized
+Software Suite and has NOT been granted a written integration license
+from RicePaddySoftware (in respect of `dmm-parser` and the Field JSON
+Specification) or from NattKh (in respect of the Workbench's own
+architecture).
+
+**"Licensed Field"** means the field of modding the Crimson Desert video
+game (developed by Pearl Abyss) and reading, writing, transforming, or
+deploying its archive formats (PAPGT, PAMT, PAZ, PABGB, PALOC, PASEQ,
+and successors).
+
+**"You"** means the licensee — any individual or entity exercising
+rights under this License.
+
+---
+
+## 2. GRANT OF PERMISSIONS
+
+Subject to the conditions and restrictions below, the License Holders
+grant You a worldwide, royalty-free, non-exclusive license to:
+
+1. **Use** the Covered Work within the Licensed Field for personal,
+   educational, or research purposes.
+2. **Modify** the Covered Work, provided modifications are licensed
+   under this License (for Workbench portions) and/or CDMTL v1.0 (for
+   embedded parser portions).
+3. **Redistribute** the Covered Work in source or binary form within
+   the Licensed Field, provided this License accompanies the
+   distribution alongside CDMTL v1.0, and all conditions in Section 3
+   are met.
+4. **Fork** the source code for development purposes, provided
+   derivative public distributions remain under this License.
+
+---
+
+## 3. CONDITIONS (COPYLEFT REQUIREMENTS)
+
+All redistributions of the Covered Work, in source or binary form, must:
+
+1. **Retain notices** — all copyright notices, this License text, the
+   embedded CDMTL v1.0 text, and any trademark notices in the source.
+2. **Provide attribution** — clearly credit "NattKh" (Workbench author)
+   and "RicePaddySoftware" (`dmm-parser` author), and link to the
+   canonical repositories.
+3. **State modifications** — clearly identify any changes made to the
+   Covered Work, with dates.
+4. **Disclose source** — when distributing binaries, the corresponding
+   source code (including modifications) must be made available under
+   this License at no charge or via a written offer valid for at least
+   three years.
+5. **Preserve license** — derivative works must be licensed under this
+   License in its entirety, alongside CDMTL v1.0 for the embedded
+   parser. No additional restrictions and no relicensing under more
+   permissive terms are allowed.
+6. **No endorsement claims** — must not imply endorsement by NattKh,
+   RicePaddySoftware, or Pearl Abyss without prior written permission.
+
+---
+
+## 4. ADDITIONAL RESTRICTIONS (Beyond GPL v3)
+
+The following clauses ADD restrictions beyond GPL v3 and are the reason
+this License is NOT GPL v3 compatible.
+
+### 4.1 Authorized Suite Requirement
+
+Software that **consumes, produces, parses, generates, or otherwise
+integrates** Workbench-authored mods, the Field JSON Specification, or
+the Workbench's editor architecture for the purpose of modifying
+Crimson Desert game archives **must** satisfy at least one of the
+following:
+
+  (a) Be part of the Authorized Software Suite, OR
+  (b) Have prior written permission from the relevant License Holder, OR
+  (c) Be a personal-use tool not distributed to other users
+      (single-user, non-public).
+
+### 4.2 No Independent Tool Integration
+
+The Covered Work, including binary or source-form copies of the
+Workbench, the embedded `dmm-parser` library, the Field JSON
+Specification, or reference implementations thereof, may NOT be
+embedded, statically linked, dynamically linked, vendored, or otherwise
+integrated into any Independent Tool without a written integration
+license from the relevant License Holder.
+
+### 4.3 No Derivative Specifications
+
+You may not publish, distribute, or promote derivative or competing
+specifications that present themselves as compatible extensions,
+successors, or replacements for the Field JSON Specification, the
+Workbench's mod-package format (`.modpkg`), or its lint-rule schema
+without explicit written designation by the relevant License Holder.
+
+This restriction does not prohibit:
+  - Academic discussion or comparison of the specification.
+  - Bug reports, security advisories, or interoperability documentation.
+  - Independent specifications targeting different file formats or use
+    cases.
+
+### 4.4 No Commercial Exploitation by Independent Tools
+
+Independent Tools may not commercially distribute, monetize, or sell
+access to functionality derived from the Covered Work, the Workbench's
+editor architecture, or the Field JSON Specification without a
+commercial license from the relevant License Holder.
+
+This restriction does not affect:
+  - Distribution of unmodified Authorized Software Suite components by
+    the License Holders.
+  - Donations, tips, or voluntary contributions to mod authors using
+    the Authorized Software Suite.
+  - Sale of mods (the JSON files or PAZ overlay folders themselves)
+    made BY end users, provided no fee is charged for the tools used to
+    create them outside the Authorized Software Suite.
+
+### 4.5 Trademark and Naming
+
+The following are trademarks of NattKh:
+
+  - "Crimson Desert Mod Workbench"
+  - "Mod Workbench"
+  - "CrimsonGameMods"
+
+The trademarks identified in CDMTL v1.0 §4.5 (including but not limited
+to "Field JSON v3.1", "Multi-Target Field Patching", "DMM", "Definitive
+Mod Manager", "SWISS", "RicePaddySoftware") remain trademarks of
+RicePaddySoftware, and CDMTL v1.0 §4.5 governs their use in the
+Workbench and any derivative work.
+
+Use of these marks in derivative works, tools, or documentation
+requires written permission from the relevant License Holder.
+Compatibility statements ("works with Mod Workbench v0.2",
+"compatible with DMM v1.3.3") are permitted descriptive uses and do
+NOT require permission.
+
+Use of confusingly similar names — including but not limited to
+abbreviations, acronyms, transliterations, or stylistic variants of the
+above marks (such as "ModBench", "CrimsonModWorkbench",
+"CrimsonWorkbench", "ModWorkshop", "CGMWorkbench", or any name that
+combines "Crimson", "Desert", "Workbench", "Mod", or "Stacker" with
+mod-management or save-editing terminology) — is prohibited where such
+use creates a likelihood of confusion in the modding community as to
+source, sponsorship, or affiliation with NattKh, RicePaddySoftware, or
+the Authorized Software Suite.
+
+### 4.6 Copyright Management Information (DMCA §1202)
+
+The Covered Work contains copyright management information ("CMI")
+within the meaning of 17 U.S.C. § 1202, including:
+
+  (a) The identification of NattKh as author and copyright owner of the
+      Workbench, and of RicePaddySoftware as author of the embedded
+      `dmm-parser` components.
+  (b) The text of this License and CDMTL v1.0.
+  (c) Trademark notices for "Mod Workbench", "Field JSON v3.1", "DMM",
+      "SWISS", and related marks.
+  (d) Per-file copyright headers in source code (where present).
+  (e) Version numbers, dates of authorship, and origin URLs (canonical
+      repository links: https://github.com/NattKh/mod-workbench and
+      https://github.com/exodiaprivate-eng/dmm-parser).
+
+**You may not intentionally remove, alter, or falsify any CMI** in the
+Covered Work, nor distribute the Covered Work knowing that CMI has been
+removed or altered. Doing so constitutes a separate violation of
+17 U.S.C. § 1202 and exposes the violator to statutory damages of
+$2,500 to $25,000 per violation, plus attorneys' fees, independently
+of any other remedies under this License.
+
+This clause is intended to be enforced via DMCA takedown notice on any
+platform hosting unauthorized copies of the Covered Work, including
+mod distribution platforms.
+
+### 4.7 Distribution Platform Restrictions
+
+The Covered Work, in source or binary form, including any modifications
+or derivative works, **may only be hosted, distributed, mirrored, or
+made publicly available on the following Authorized Distribution
+Channels**:
+
+  (a) Repositories under the GitHub organizations or accounts of NattKh
+      (https://github.com/NattKh) and RicePaddySoftware
+      (https://github.com/exodiaprivate-eng), and any successor
+      accounts officially designated by either License Holder.
+  (b) NexusMods pages owned and operated by NattKh, RicePaddySoftware,
+      or their designated agents.
+  (c) Official websites of NattKh or RicePaddySoftware (when
+      established) and their associated download CDNs.
+  (d) Any other distribution channel explicitly authorized in writing
+      by the relevant License Holder.
+
+**Hosting, mirroring, or redistributing the Covered Work or derivative
+works on third-party platforms is expressly prohibited without written
+permission.** Prohibited platforms include, but are not limited to:
+
+  - NexusMods, ModDB, GameBanana, CurseForge, Steam Workshop, ModNexus,
+    Mod.io, and any successor or competitor mod distribution service,
+    when the upload is by anyone other than a License Holder or
+    authorized agent.
+  - GitHub repositories, GitLab, Bitbucket, Codeberg, or any
+    source-code hosting platform, when the repository is not part of
+    the Authorized Distribution Channels.
+  - File-sharing services (MediaFire, Mega, Google Drive, Dropbox,
+    etc.) when used for public redistribution rather than personal
+    backup.
+  - Discord servers, Reddit posts, forum attachments, or any chat /
+    social platform when the posting constitutes public redistribution.
+
+### 4.8 No Forking for Public Redistribution
+
+While You may create personal forks of the Covered Work for development
+purposes (per Section 2.4), publishing such forks for public consumption
+— including making them available on NexusMods, third-party GitHub
+repositories, or other distribution channels not listed in Section 4.7
+— requires prior written authorization from the relevant License
+Holder.
+
+This restriction does not affect:
+  - Pull requests submitted to the official Authorized Distribution
+    Channels.
+  - Private development forks not shared publicly.
+  - Forks created solely for the purpose of submitting bug reports or
+    security advisories.
+
+### 4.9 No Competing Implementation by Licensees
+
+By accepting this License — including by cloning, downloading,
+building, executing, viewing, reading, indexing, scraping, training
+upon, or otherwise accessing the Covered Work or its accompanying
+documentation, whether directly by Yourself or through an AI
+assistant, large language model, autonomous coding agent, code-analysis
+tool, web scraper, search indexer, or any other automated system acting
+on Your behalf or at Your direction — You agree that, **for a period
+of three (3) years from the date of Your first such access**, You will
+not directly or indirectly:
+
+  (a) Develop, publish, or distribute a software tool that performs
+      substantially the same functions as the Workbench (i.e., a
+      Crimson Desert pabgb table editor, mod packager, PAZ overlay
+      deployer, or graphical mod authoring environment) AND that
+      consumes, produces, or interoperates with the Field JSON
+      Specification or any successor format.
+
+  (b) Use knowledge of the Covered Work's internal architecture,
+      methodology, application logic, or mod-mounting / overlay
+      mechanisms — including but not limited to: the field-diff
+      tracking system, the type-aware editor dispatch, the
+      catalog-driven name-resolution scheme, the lint-rule trait
+      hierarchy, the worker-thread job protocol, the auto-snapshot
+      pre-deploy strategy, the PAZ overlay folder layout, the
+      `Compression::None` requirement for pabgh files, the trie-based
+      archive lookup, or the multi-target field intent resolution
+      algorithm — to develop a competing tool.
+
+  (c) Reverse engineer the Covered Work, decompile binary
+      distributions, or analyze source code for the purpose of
+      creating a competing implementation, except as expressly
+      permitted by 17 U.S.C. § 1201(f) (interoperability with
+      independently-created programs that do not compete with the
+      Covered Work) or equivalent statutory provisions.
+
+This clause exists because U.S. copyright law (17 U.S.C. § 102(b))
+does not extend protection to methods, processes, or systems — only to
+specific code expression. This License therefore relies on contract
+law to protect the functional architecture and methodology of the
+Covered Work against parties who have voluntarily accepted these terms
+by accessing the Covered Work.
+
+**Permitted Activities** (do not violate this clause):
+
+  1. **Independent prior creation** — Tools that the developer can
+     demonstrate were independently developed without ANY exposure to
+     the Covered Work, the Field JSON Specification, or related
+     documentation. The burden of proving independent creation rests
+     with the developer.
+
+  2. **Interoperability without competition** — Tools that read Field
+     JSON v3.1 mod files for archival, conversion, or display
+     purposes, but that DO NOT apply mods to live Crimson Desert game
+     files and DO NOT replicate the Workbench's editor or deploy
+     functionality.
+
+  3. **Academic study and publication** — Research papers, tutorials,
+     blog posts analyzing the Covered Work, provided no competing tool
+     results.
+
+  4. **Contributions to the Authorized Software Suite** — Pull
+     requests, plugins, and extensions accepted into the canonical
+     repositories of NattKh or RicePaddySoftware.
+
+  5. **Expiration** — After the three-year period elapses, this
+     clause no longer restricts the licensee.
+
+**Enforcement:** Violation of this clause constitutes a material
+breach of this License, terminating all rights under Section 7 and
+exposing the violator to contract-law remedies including injunctive
+relief, disgorgement of profits, and damages. The relevant License
+Holder may also identify the violator publicly and request that
+platform operators remove the violating tool on grounds of License
+breach.
+
+### 4.10 Acceptance by Access (Including AI-Mediated Access)
+
+**Acceptance of this License is triggered by ANY access to the Covered
+Work**, regardless of the means, duration, or intermediary involved.
+"Access" includes, but is not limited to:
+
+  (a) Cloning, forking, or downloading any repository in the
+      Authorized Distribution Channels.
+  (b) Reading source code via the GitHub web interface, GitLab,
+      Sourcegraph, Sourcehut, or any code-browsing service.
+  (c) Downloading binary releases, installers, or packaged
+      distributions.
+  (d) Reading the Field JSON Specification document, README files,
+      `STATUS.md`, `ROADMAP.md`, or related documentation.
+  (e) Executing the Covered Work or any binary built from it.
+  (f) Inspecting compiled binaries via decompilation, disassembly,
+      static analysis, or dynamic analysis tools.
+  (g) Reading the Covered Work via web archives (Wayback Machine,
+      archive.today, Google Cache, GitHub Archive Program) or any
+      successor archival service.
+  (h) Receiving or viewing copies distributed by third parties,
+      regardless of whether such distribution was authorized.
+
+#### 4.10.1 Acceptance via AI Assistants and Automated Agents
+
+Access to the Covered Work via an AI assistant, large language model
+(LLM), code-analysis agent, autonomous coding tool, web scraper,
+search engine indexer, retrieval-augmented-generation (RAG) system, or
+any other automated system acting on Your behalf or at Your direction
+**constitutes Your acceptance of this License**. You cannot escape the
+obligations of this License by interposing an AI, agent, or other
+automated intermediary between Yourself and the Covered Work.
+
+This includes, but is not limited to:
+
+  (a) Prompting an AI assistant — such as Claude (Anthropic), ChatGPT
+      (OpenAI), Gemini (Google), Cursor, GitHub Copilot, Sourcegraph
+      Cody, Aider, Cline, Devin, Windsurf, Replit Agent, or any
+      present or future AI coding tool — to read, summarize, analyze,
+      refactor, translate, port, or replicate the Covered Work.
+  (b) Using an autonomous coding agent or AI-driven development
+      environment to clone, decompile, parse, or process the
+      Workbench's repositories, binaries, or documentation.
+  (c) Using a web-scraping service, code-indexing service, or AI
+      training pipeline to retrieve the Covered Work for analysis or
+      model training.
+  (d) Receiving AI-generated explanations, summaries, pseudocode,
+      architectural diagrams, or refactored code derived from the
+      Covered Work.
+  (e) Using AI-generated code that incorporates, paraphrases,
+      structurally mirrors, or is derived from the Covered Work,
+      regardless of whether You personally observed the source code
+      from which it was derived.
+  (f) Asking an AI to "build a tool similar to the Mod Workbench" or
+      "implement a Crimson Desert mod editor" if the AI's response is
+      informed (whether at training time or inference time) by the
+      Covered Work.
+
+#### 4.10.2 No AI Training Without Authorization
+
+The Covered Work may not be used as training data, fine-tuning data,
+retrieval-augmented-generation (RAG) source material, in-context-
+learning examples, or any other form of input to an AI model, agent,
+or automated system intended to:
+
+  (a) Generate competing implementations of the Workbench or the
+      Authorized Software Suite (per Section 4.9).
+  (b) Extract or replicate the methodology, architecture, or
+      application logic of the Covered Work (per Section 4.9).
+  (c) Produce derivative documentation of the Field JSON Specification
+      or the Workbench's editor architecture without attribution to
+      the relevant License Holder.
+  (d) Generate code, documentation, or analysis that would, if
+      produced by a human licensee, violate any other clause of this
+      License.
+
+Use of the Covered Work as input to AI tools for purposes consistent
+with the Authorized Software Suite ecosystem (e.g., a Claude-assisted
+developer working on an approved contribution to the Workbench or to
+DMM) is permitted, provided such use complies with all other clauses
+of this License.
+
+#### 4.10.3 Imputation of Knowledge
+
+Knowledge, methodology, architecture, application logic, or
+implementation details extracted from the Covered Work via AI
+assistants, automated agents, or any other intermediary tool **are
+imputed to You** — the human user who directed, prompted, or otherwise
+caused the access — for purposes of Section 4.9 (No Competing
+Implementation by Licensees).
+
+You cannot claim "the AI read it, not me" as a defense to building a
+competing tool. Under principles of agency law, an automated system
+acting on Your behalf is legally equivalent to Your own action for
+purposes of License acceptance and breach analysis.
+
+#### 4.10.4 Reasonable Notice
+
+This License is published prominently:
+
+  (a) As `LICENSE.txt` at the root of the Workbench directory in
+      every repository in the Authorized Distribution Channels.
+  (b) Referenced from the README of every Authorized Distribution
+      Channel repository.
+  (c) On the NexusMods page (and other Authorized Distribution
+      Channels) for every distributed binary.
+  (d) At the canonical URL
+      https://github.com/NattKh/mod-workbench/blob/main/mod-workbench/LICENSE.txt
+      (or successor URL designated by NattKh).
+
+By accessing the Covered Work through any of these channels — or any
+unauthorized copy that retains the original notices — You acknowledge
+constructive notice of these terms. Stripping these notices does not
+eliminate Your obligations under this License; it instead constitutes
+an additional violation under Section 4.6 (Copyright Management
+Information / DMCA §1202).
+
+---
+
+## 5. PERMITTED EXCEPTIONS
+
+The following uses are explicitly permitted without separate
+authorization, even where Sections 4.1–4.4 would otherwise restrict
+them:
+
+1. **Personal use** — A single individual using a personal tool for
+   their own gameplay, with no public distribution.
+2. **Educational use** — Academic study, classroom instruction, and
+   research on the file formats, the Field JSON Specification, and
+   the Workbench's architecture.
+3. **Security research** — Vulnerability discovery, responsible
+   disclosure, and defensive security analysis.
+4. **Interoperability with non-CD tooling** — Translation FROM Field
+   JSON Specification or Workbench mod-package formats TO unrelated
+   archival or interchange formats, where the destination is NOT used
+   to modify Crimson Desert game archives.
+5. **Bug reports and feedback** — Submission of issues, pull requests,
+   and constructive criticism.
+6. **Reverse engineering for compatibility** — As required and
+   permitted by applicable copyright law (e.g., 17 U.S.C. § 1201(f) in
+   the United States, equivalent EU directives, etc.).
+
+---
+
+## 6. CONTRIBUTIONS
+
+Contributions submitted to NattKh's Authorized Distribution Channels
+are governed by a separate Contributor License Agreement (CLA)
+[TO BE DRAFTED]. By submitting a contribution, You agree to license
+it under this License and grant NattKh the right to relicense future
+versions if needed (subject to compatibility with CDMTL v1.0 in
+respect of any embedded parser code).
+
+If no CLA is in place at the time of contribution, the contribution
+is presumed to be licensed under CDMWL v1.0 with the right of NattKh
+to incorporate it into the Authorized Software Suite.
+
+---
+
+## 7. TERMINATION
+
+Your rights under this License terminate automatically if You
+materially violate any of its terms.
+
+You may regain Your rights by:
+
+1. Ceasing the violating activity within thirty (30) days of receiving
+   written notice, AND
+2. Either curing the violation OR receiving written reinstatement from
+   the relevant License Holder.
+
+Termination does not affect:
+  - The rights of downstream end users who received copies of the
+    Covered Work in compliance with this License before Your
+    termination.
+  - The validity of mods created by end users using compliant
+    Authorized Software Suite tools.
+
+---
+
+## 8. ENFORCEMENT MECHANISM
+
+The License Holders reserve all rights and remedies available under
+applicable copyright, trademark, and contract law to enforce this
+License. Without limiting the foregoing, each License Holder
+specifically intends to enforce violations through the following
+mechanisms:
+
+### 8.1 DMCA Takedown Notices
+
+For unauthorized hosting or distribution of the Covered Work on
+third-party platforms (including but not limited to NexusMods, ModDB,
+GameBanana, GitHub, GitLab, CurseForge, Steam Workshop, Mod.io, and
+similar services), the relevant License Holder will issue takedown
+notices under 17 U.S.C. § 512 (Digital Millennium Copyright Act)
+directly to the platform operator. By accepting this License, You
+acknowledge that:
+
+  (a) Hosting or redistributing the Covered Work outside the
+      Authorized Distribution Channels (Section 4.7) constitutes
+      copyright infringement actionable under DMCA.
+  (b) Removing or altering Copyright Management Information
+      (Section 4.6) is independently actionable under 17 U.S.C. § 1202
+      with statutory damages of $2,500 to $25,000 per violation.
+  (c) Platform operators are entitled to rely on the License Holder's
+      good-faith DMCA notices in removing infringing content.
+
+### 8.2 Trademark Enforcement
+
+For unauthorized use of trademarks (Section 4.5), including
+confusingly similar names targeting the Crimson Desert modding
+community, the relevant License Holder will pursue:
+
+  (a) Trademark complaints to the hosting platform under its
+      trademark policy.
+  (b) UDRP (Uniform Domain-Name Dispute-Resolution Policy)
+      proceedings for domain-name infringement.
+  (c) Cease-and-desist letters and trademark infringement litigation
+      under the Lanham Act (15 U.S.C. § 1051 et seq.) or equivalent
+      foreign trademark law.
+
+### 8.3 License Violation Remedies
+
+For violations of License terms not otherwise covered by copyright or
+trademark enforcement (e.g., breach of the Authorized Suite
+Requirement in Section 4.1), the relevant License Holder reserves the
+right to:
+
+  (a) Terminate the violator's License grant under Section 7.
+  (b) Pursue contract-law remedies, including specific performance and
+      damages.
+  (c) Seek injunctive relief to prevent ongoing violations.
+  (d) Publicly identify violators and excluded forks via official
+      communication channels.
+
+### 8.4 No Waiver
+
+Failure of any License Holder to enforce any provision of this License
+at any time shall not be construed as a waiver of the right to enforce
+that provision later. Selective enforcement does not create a defense
+or estoppel for any violator.
+
+### 8.5 Cooperation with Platform Operators
+
+This License is intended to be self-executing for the purposes of
+platform-mediated enforcement. The License Holders grant platform
+operators (NexusMods, ModDB, GitHub, etc.) the right to rely on this
+License text as a basis for evaluating takedown requests, DMCA notices,
+and trademark complaints concerning the Covered Work.
+
+### 8.6 Joint and Several Enforcement
+
+Where a violation affects rights held by both License Holders (e.g.,
+unauthorized redistribution of a binary that contains both Workbench
+code and embedded `dmm-parser` code), each License Holder may pursue
+enforcement independently or jointly, and recovery by one License
+Holder does not preclude recovery by the other for separate harms.
+
+---
+
+## 9. WARRANTY DISCLAIMER
+
+THE COVERED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT,
+AND TITLE.
+
+IN NO EVENT SHALL EITHER LICENSE HOLDER OR ANY CONTRIBUTOR BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE COVERED WORK,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---
+
+## 10. RELATIONSHIP TO THE GAME
+
+The Covered Work is a third-party modding toolkit. It is **not**
+affiliated with, endorsed by, or sponsored by Pearl Abyss, the
+developers of Crimson Desert, or any related entity. End users assume
+all responsibility for compliance with the game's End User License
+Agreement and applicable laws when using the Covered Work to modify
+game files.
+
+---
+
+## 11. RELATIONSHIP TO CDMTL v1.0
+
+This License is structurally modeled on CDMTL v1.0 and is intended to
+operate compatibly with it. Where the Workbench is distributed
+together with `dmm-parser-rust-only`:
+
+  (a) CDMTL v1.0 governs the embedded parser code (located under
+      `dmm-parser-rust-only/`).
+  (b) CDMWL v1.0 (this License) governs the Workbench code (located
+      under `mod-workbench/`).
+  (c) The combined work is distributed under both licenses, and a
+      licensee must comply with both.
+  (d) In the event of an irreconcilable conflict between this License
+      and CDMTL v1.0, CDMTL v1.0 takes precedence in respect of the
+      embedded parser code, and this License takes precedence in
+      respect of the Workbench code.
+
+NattKh is the named author of the Workbench. RicePaddySoftware is the
+named author of `dmm-parser` and the Field JSON Specification. The
+designation of the Workbench as part of the Authorized Software Suite
+is acknowledged under CDMTL v1.0 §1(g).
+
+---
+
+## 12. JURISDICTION AND DISPUTE RESOLUTION
+
+This License shall be governed by and construed in accordance with the
+laws of **[JURISDICTION TO BE DETERMINED — typically the country/state
+where NattKh is resident or domiciled]**, without regard to
+conflict-of-laws principles.
+
+Any dispute arising out of or relating to this License shall be
+resolved by **[binding arbitration / courts of competent jurisdiction
+in JURISDICTION — to be decided]**.
+
+---
+
+## 13. ACKNOWLEDGMENT
+
+By using, modifying, distributing, accessing, reading, viewing,
+downloading, executing, or otherwise interacting with the Covered Work
+— whether directly by Yourself or through an AI assistant, automated
+agent, code-analysis tool, web scraper, or any other intermediary
+acting on Your behalf or at Your direction — You acknowledge that You
+have read (or had constructive notice of) this License and CDMTL v1.0,
+understand their terms, and agree to be bound by them. If You do not
+agree to these terms, You must not access, use, or direct any agent
+(human or automated) to access or use the Covered Work.
+
+---
+
+## 14. SEVERABILITY
+
+If any provision of this License is found unenforceable in any
+jurisdiction, the remaining provisions shall continue in full force
+and effect, and the unenforceable provision shall be interpreted to
+most closely match the original intent in a manner that is enforceable.
+
+---
+
+**END OF CDMWL v1.0**
+
+The full text of CDMTL v1.0, governing the embedded
+`dmm-parser-rust-only` components, is shipped alongside this License
+at `dmm-parser-rust-only/LICENSE.txt` in this repository and at the
+canonical URL
+https://github.com/exodiaprivate-eng/dmm-parser/blob/main/LICENSE.txt
+(or successor URL designated by RicePaddySoftware).
