@@ -486,6 +486,289 @@ fn finalize_overlay(
     Ok(())
 }
 
+// ── Byte-patch editor (generic) ─────────────────────────────────────────────
+//
+// The presets above (sleep mod + NPC swap) cover two well-known recipes.
+// The byte-patch editor below is the general-purpose authoring path: list
+// every `.paseq` / `.paseqc` / `.pastage` file in 0014, read one as raw
+// bytes, and apply user-authored find/replace patches against it. Saves
+// to a new overlay group so users can iterate without touching the preset
+// flows.
+//
+// PASEQ binary format isn't decoded yet, so the editor is byte-level by
+// design — when the format is reverse-engineered later, the byte-patch
+// JSON files authored here remain useful as raw fallbacks.
+
+use serde::{Deserialize, Serialize};
+use dmm_parser_rust_only::binary::pamt::ResolvedFile;
+
+/// One file in the sequencer PAZ that the byte-patch editor can target.
+#[derive(Clone, Debug)]
+pub struct PaseqPazEntry {
+    /// PAMT directory path the file lives under (e.g.
+    /// `"sequencer/binary__/stageseq/funcnpc"`).
+    pub dir_path: String,
+    /// File name including the `.paseq` / `.paseqc` / `.pastage` extension.
+    pub filename: String,
+}
+
+impl PaseqPazEntry {
+    /// Display label for dropdowns — directory + filename.
+    pub fn display(&self) -> String {
+        format!("{}  ({})", self.filename, self.dir_path)
+    }
+
+    /// File extension lowercased (e.g. `"paseq"` / `"pastage"`). Used to
+    /// pick a default icon / tab in the UI.
+    pub fn extension(&self) -> &'static str {
+        if self.filename.ends_with(".paseqc") {
+            "paseqc"
+        } else if self.filename.ends_with(".pastage") {
+            "pastage"
+        } else if self.filename.ends_with(".paseq") {
+            "paseq"
+        } else {
+            "bin"
+        }
+    }
+}
+
+/// One find/replace byte patch. Authored in the editor, saved as JSON
+/// for sharing, applied against a target file's bytes.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BytePatch {
+    /// Human-readable name shown in the patch list. Required so users
+    /// can tell their patches apart.
+    pub name: String,
+    /// Bytes to find. Encoded as a hex string in JSON
+    /// (e.g. `"46 61 6c 73 65"`); whitespace is ignored on parse.
+    #[serde(with = "hex_bytes_serde")]
+    pub find: Vec<u8>,
+    /// Bytes to substitute. Must equal `find.len()` unless `allow_resize`
+    /// is true — different-length replacements break file-internal
+    /// offsets and should be opt-in.
+    #[serde(with = "hex_bytes_serde")]
+    pub replace: Vec<u8>,
+    /// Optional comment (why this patch exists, source citation, etc.).
+    #[serde(default)]
+    pub comment: String,
+    /// Allow `find.len() != replace.len()`. Defaults to false because
+    /// most game-binary patches break if the file size changes — even
+    /// when the format isn't decoded, file-level pointers still point
+    /// at fixed offsets.
+    #[serde(default)]
+    pub allow_resize: bool,
+}
+
+/// A complete byte-patch document: target file + ops. Mirrors
+/// [`crate::xml_patcher::XmlPatch`] in shape so users can author either
+/// flavour with the same mental model.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BytePatchDoc {
+    /// `dir_path/filename` — used by the deploy path to know where the
+    /// target lives in the PAZ.
+    pub dir_path: String,
+    pub filename: String,
+    /// Free-form description for the UI.
+    #[serde(default)]
+    pub description: String,
+    pub patches: Vec<BytePatch>,
+}
+
+impl BytePatchDoc {
+    pub fn new(dir_path: impl Into<String>, filename: impl Into<String>) -> Self {
+        Self {
+            dir_path: dir_path.into(),
+            filename: filename.into(),
+            description: String::new(),
+            patches: Vec::new(),
+        }
+    }
+}
+
+/// List every `.paseq` / `.paseqc` / `.pastage` file in PAZ group 0014.
+/// Returned sorted by dir_path then filename.
+pub fn enumerate_paseq_files(game_dir: &Path) -> io::Result<Vec<PaseqPazEntry>> {
+    let pamt_path = game_dir.join(PAZ_GROUP).join("0.pamt");
+    let pamt_bytes = fs::read(&pamt_path)?;
+    let pamt = PackMeta::parse(&pamt_bytes, None)?;
+
+    let mut out: Vec<PaseqPazEntry> = Vec::new();
+    for dir in &pamt.directories {
+        for f in &dir.files {
+            let ext_ok = f.filename_lc_ends(&[".paseq", ".paseqc", ".pastage"]);
+            if ext_ok {
+                out.push(PaseqPazEntry {
+                    dir_path: dir.path.clone(),
+                    filename: f.name.clone(),
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| {
+        a.dir_path
+            .cmp(&b.dir_path)
+            .then(a.filename.cmp(&b.filename))
+    });
+    Ok(out)
+}
+
+/// Read a single file from group 0014 by directory + name.
+pub fn read_paseq_from_paz(game_dir: &Path, entry: &PaseqPazEntry) -> io::Result<Vec<u8>> {
+    let pamt_path = game_dir.join(PAZ_GROUP).join("0.pamt");
+    let pamt_bytes = fs::read(&pamt_path)?;
+    let pamt = PackMeta::parse(&pamt_bytes, None)?;
+    extract_named_file(&pamt, game_dir, &entry.dir_path, &entry.filename)
+}
+
+/// Apply a list of byte patches to `data` in order. Each patch replaces
+/// every non-overlapping occurrence of `find` with `replace`. Errors if
+/// `replace.len() != find.len()` and the patch doesn't have
+/// `allow_resize` set (length-changing patches are rejected by default
+/// because they break file-internal offsets).
+pub fn apply_byte_patches(data: &[u8], patches: &[BytePatch]) -> io::Result<Vec<u8>> {
+    let mut buf = data.to_vec();
+    for (i, p) in patches.iter().enumerate() {
+        if p.find.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("patch[{}] '{}': find is empty", i, p.name),
+            ));
+        }
+        if p.find.len() != p.replace.len() && !p.allow_resize {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!(
+                    "patch[{}] '{}': find ({}B) and replace ({}B) differ in length \
+                     — set allow_resize=true to opt in",
+                    i,
+                    p.name,
+                    p.find.len(),
+                    p.replace.len()
+                ),
+            ));
+        }
+        buf = replace_bytes(&buf, &p.find, &p.replace);
+    }
+    Ok(buf)
+}
+
+/// Deploy one or more byte-patch documents as a PAZ overlay.
+///
+/// Each doc's target file is read from vanilla 0014, patched, and added
+/// to the overlay PAZ. PAPGT is updated front-insert so the overlay
+/// wins lookup. Mirrors `apply_sleep_mod` but driven by user-authored
+/// patches instead of the hardcoded preset.
+pub fn deploy_byte_patches(
+    game_dir: &Path,
+    docs: &[BytePatchDoc],
+    overlay_group: &str,
+) -> io::Result<()> {
+    if docs.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "no patch documents to deploy",
+        ));
+    }
+
+    let pamt_path = game_dir.join(PAZ_GROUP).join("0.pamt");
+    let pamt_bytes = fs::read(&pamt_path)?;
+    let pamt = PackMeta::parse(&pamt_bytes, None)?;
+    let encrypt_info = pamt.header.encrypt_info.encrypt_info;
+
+    let group_dir = game_dir.join(overlay_group);
+    if group_dir.exists() {
+        fs::remove_dir_all(&group_dir)?;
+    }
+    fs::create_dir_all(&group_dir)?;
+
+    let mut builder = PackGroupBuilder::new(
+        &group_dir,
+        Compression::None,
+        CryptoType::ChaCha20,
+        encrypt_info,
+        256 * 1024 * 1024,
+    );
+
+    for doc in docs {
+        let data = extract_named_file(&pamt, game_dir, &doc.dir_path, &doc.filename)?;
+        let patched = apply_byte_patches(&data, &doc.patches)?;
+        builder.add_file(&doc.dir_path, &doc.filename, &patched)?;
+    }
+
+    finalize_overlay(&builder_finish_with_checksum(builder)?, game_dir, overlay_group)
+}
+
+/// Find every non-overlapping occurrence of `needle` in `haystack` and
+/// substitute it with `replacement`. Identical to
+/// `patch_false_to_true` but generalised to arbitrary needles.
+fn replace_bytes(haystack: &[u8], needle: &[u8], replacement: &[u8]) -> Vec<u8> {
+    if needle.is_empty() {
+        return haystack.to_vec();
+    }
+    let mut out = Vec::with_capacity(haystack.len());
+    let mut i = 0;
+    while i < haystack.len() {
+        if i + needle.len() <= haystack.len() && &haystack[i..i + needle.len()] == needle {
+            out.extend_from_slice(replacement);
+            i += needle.len();
+        } else {
+            out.push(haystack[i]);
+            i += 1;
+        }
+    }
+    out
+}
+
+/// `serde_with`-style helper to (de)serialise `Vec<u8>` as a hex string
+/// with optional whitespace separators. Stored on disk as
+/// `"46 61 6c 73 65"` rather than a base64 blob so users can hand-edit
+/// patch JSON files easily.
+mod hex_bytes_serde {
+    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(bytes: &[u8], s: S) -> Result<S::Ok, S::Error> {
+        let hex: String = bytes
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<_>>()
+            .join(" ");
+        hex.serialize(s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
+        let s = String::deserialize(d)?;
+        let mut out = Vec::new();
+        let mut buf = String::new();
+        for ch in s.chars() {
+            if ch.is_ascii_whitespace() || ch == ',' {
+                continue;
+            }
+            buf.push(ch);
+            if buf.len() == 2 {
+                let byte = u8::from_str_radix(&buf, 16).map_err(de::Error::custom)?;
+                out.push(byte);
+                buf.clear();
+            }
+        }
+        if !buf.is_empty() {
+            return Err(de::Error::custom("hex string has odd nibble count"));
+        }
+        Ok(out)
+    }
+}
+
+trait FileExt {
+    fn filename_lc_ends(&self, exts: &[&str]) -> bool;
+}
+
+impl FileExt for ResolvedFile {
+    fn filename_lc_ends(&self, exts: &[&str]) -> bool {
+        let lc = self.name.to_ascii_lowercase();
+        exts.iter().any(|e| lc.ends_with(*e))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

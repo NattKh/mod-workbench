@@ -121,19 +121,23 @@ pub fn save_patch(patch: &XmlPatch, path: &Path) -> io::Result<()> {
 }
 
 // ---------------------------------------------------------------------------
-// Internal tree representation + walkers
+// Tree representation + walkers
+//
+// Public so the XML tree editor (src/ui/xml_panel.rs) can mutate the document
+// directly. Pre-editor, this was internal scaffolding for `apply_patch`; the
+// patch path still uses the same types.
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug)]
-struct XmlNode {
-    name: String,
-    attrs: Vec<(String, String)>,
-    text: String,
-    children: Vec<XmlNode>,
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct XmlNode {
+    pub name: String,
+    pub attrs: Vec<(String, String)>,
+    pub text: String,
+    pub children: Vec<XmlNode>,
 }
 
 impl XmlNode {
-    fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
             attrs: Vec::new(),
@@ -141,18 +145,62 @@ impl XmlNode {
             children: Vec::new(),
         }
     }
+
+    /// Walk a slash-separated path from this node. Returns the first match
+    /// found by depth-first walk. Used by the tree editor to focus the
+    /// node selected from the breadcrumb path.
+    pub fn find_by_path<'a>(&'a self, segments: &[&str]) -> Option<&'a XmlNode> {
+        if segments.is_empty() {
+            return Some(self);
+        }
+        for child in &self.children {
+            if child.name == segments[0] {
+                if let Some(hit) = child.find_by_path(&segments[1..]) {
+                    return Some(hit);
+                }
+            }
+        }
+        None
+    }
 }
 
 #[derive(Clone, Debug)]
-struct XmlTree {
+pub struct XmlTree {
     /// Optional XML declaration (e.g. `<?xml version="1.0" ?>`) preserved
     /// so a roundtrip doesn't strip it. Stored as raw bytes minus the
     /// `<?` `?>` framing.
-    declaration: Option<Vec<u8>>,
-    root: XmlNode,
+    pub declaration: Option<Vec<u8>>,
+    pub root: XmlNode,
+    /// Set when [`parse_to_tree`] wrapped a multi-root game XML in a
+    /// sentinel `<__cdmm_root__>` element so the parser had a single
+    /// document root. Re-serialisation strips the wrapper. Mirrors
+    /// `XmlPatchApplier.NormaliseGameXml` from CdModCreator.
+    pub sentinel_wrapped: bool,
 }
 
-fn parse_to_tree(xml_bytes: &[u8]) -> io::Result<XmlTree> {
+/// Parse XML bytes into the editor's tree representation. Handles two
+/// game-XML quirks before quick-xml gets involved:
+///
+/// 1. `</>` shorthand — a non-standard closing tag that means "close the
+///    innermost open element". We rewrite it to `</TagName>` based on the
+///    open-tag stack so quick-xml can parse the result.
+/// 2. Multiple root elements — wrap the whole document in
+///    `<__cdmm_root__>...</__cdmm_root__>` so quick-xml sees a single root.
+///    [`serialize_tree`] removes the wrapper on the way back out.
+///
+/// Reference behaviour ported from CdModCreator's `NormaliseGameXml` /
+/// `HasMultipleRoots`.
+pub fn parse_to_tree(xml_bytes: &[u8]) -> io::Result<XmlTree> {
+    let raw = std::str::from_utf8(xml_bytes)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("xml utf8: {}", e)))?;
+    let normalised = resolve_short_close_tags(raw);
+    let (final_text, wrapped) = wrap_multi_root(&normalised);
+    let mut tree = parse_to_tree_inner(final_text.as_bytes())?;
+    tree.sentinel_wrapped = wrapped;
+    Ok(tree)
+}
+
+fn parse_to_tree_inner(xml_bytes: &[u8]) -> io::Result<XmlTree> {
     let mut reader = Reader::from_reader(xml_bytes);
     reader.config_mut().trim_text(false);
 
@@ -244,7 +292,129 @@ fn parse_to_tree(xml_bytes: &[u8]) -> io::Result<XmlTree> {
         )
     })?;
 
-    Ok(XmlTree { declaration, root })
+    Ok(XmlTree {
+        declaration,
+        root,
+        sentinel_wrapped: false,
+    })
+}
+
+/// Sentinel root tag the multi-root wrapper uses. Mirrors CdModCreator.
+const SENTINEL_ROOT: &str = "__cdmm_root__";
+
+/// Replace every `</>` (the non-standard "close innermost" shorthand) with
+/// the proper closing tag based on the current open-tag stack. No-op when
+/// the input doesn't contain `</>`.
+fn resolve_short_close_tags(xml: &str) -> String {
+    if !xml.contains("</>") {
+        return xml.to_string();
+    }
+    let bytes = xml.as_bytes();
+    let mut out = String::with_capacity(xml.len() + 64);
+    let mut stack: Vec<String> = Vec::new();
+    let mut i = 0usize;
+    while i < bytes.len() {
+        if bytes[i] == b'<' {
+            let Some(end_rel) = xml[i..].find('>') else {
+                out.push_str(&xml[i..]);
+                break;
+            };
+            let end = i + end_rel;
+            let tag = &xml[i..=end];
+            if tag == "</>" {
+                if let Some(name) = stack.pop() {
+                    out.push_str("</");
+                    out.push_str(&name);
+                    out.push('>');
+                } else {
+                    out.push_str(tag); // pathological — leave as-is
+                }
+            } else if tag.starts_with("</") {
+                stack.pop();
+                out.push_str(tag);
+            } else if tag.starts_with("<?") || tag.starts_with("<!") {
+                out.push_str(tag);
+            } else if tag.ends_with("/>") {
+                out.push_str(tag);
+            } else {
+                let inner = &tag[1..tag.len() - 1];
+                let name_end = inner
+                    .find(|c: char| c.is_whitespace() || c == '/')
+                    .unwrap_or(inner.len());
+                stack.push(inner[..name_end].to_string());
+                out.push_str(tag);
+            }
+            i = end + 1;
+        } else {
+            out.push(bytes[i] as char);
+            i += 1;
+        }
+    }
+    out
+}
+
+/// Wrap multi-root XML (multiple top-level elements after the optional
+/// `<?xml?>` declaration) in a sentinel root element so quick-xml can
+/// parse it. Returns `(possibly-wrapped, was_wrapped)`.
+fn wrap_multi_root(xml: &str) -> (String, bool) {
+    if !has_multiple_roots(xml) {
+        return (xml.to_string(), false);
+    }
+    // Keep the declaration outside the sentinel wrapper if present.
+    let trimmed = xml.trim_start();
+    if let Some(decl_end) = trimmed.find("?>") {
+        let decl_end_abs = (xml.len() - trimmed.len()) + decl_end + 2;
+        let decl_part = &xml[..decl_end_abs];
+        let body = &xml[decl_end_abs..];
+        return (
+            format!("{}<{}>{}</{}>", decl_part, SENTINEL_ROOT, body, SENTINEL_ROOT),
+            true,
+        );
+    }
+    (
+        format!("<{}>{}</{}>", SENTINEL_ROOT, xml, SENTINEL_ROOT),
+        true,
+    )
+}
+
+/// Quick check for two consecutive non-comment, non-PI top-level open tags.
+fn has_multiple_roots(xml: &str) -> bool {
+    let bytes = xml.as_bytes();
+    let mut depth: i32 = 0;
+    let mut roots = 0;
+    let mut i = 0usize;
+    while i < bytes.len() {
+        if bytes[i] != b'<' {
+            i += 1;
+            continue;
+        }
+        let Some(end_rel) = xml[i..].find('>') else {
+            break;
+        };
+        let end = i + end_rel;
+        let tag = &xml[i..=end];
+        if tag.starts_with("<?") || tag.starts_with("<!--") || tag.starts_with("<!") {
+            i = end + 1;
+            continue;
+        }
+        if tag.starts_with("</") {
+            depth -= 1;
+            i = end + 1;
+            continue;
+        }
+        let self_close = tag.ends_with("/>");
+        if depth == 0 {
+            roots += 1;
+            if roots > 1 {
+                return true;
+            }
+        }
+        if !self_close {
+            depth += 1;
+        }
+        i = end + 1;
+    }
+    false
 }
 
 fn node_from_start(start: &BytesStart) -> io::Result<XmlNode> {
@@ -379,7 +549,32 @@ fn split_path(path: &str) -> io::Result<Vec<String>> {
     Ok(trimmed.split('/').map(|s| s.to_string()).collect())
 }
 
-fn serialize_tree(tree: &XmlTree) -> io::Result<Vec<u8>> {
+/// Serialise the tree back to XML bytes. If the tree was wrapped in a
+/// sentinel root during parsing (multi-root original), the wrapper is
+/// stripped here so the output is byte-compatible with the source.
+pub fn serialize_tree(tree: &XmlTree) -> io::Result<Vec<u8>> {
+    let raw = serialize_tree_raw(tree)?;
+    if !tree.sentinel_wrapped {
+        return Ok(raw);
+    }
+    let text = std::str::from_utf8(&raw).map_err(|e| {
+        io::Error::new(io::ErrorKind::InvalidData, format!("xml utf8: {}", e))
+    })?;
+    let open = format!("<{}>", SENTINEL_ROOT);
+    let close = format!("</{}>", SENTINEL_ROOT);
+    let Some(open_at) = text.find(&open) else {
+        return Ok(raw);
+    };
+    let Some(close_at) = text.rfind(&close) else {
+        return Ok(raw);
+    };
+    let before = &text[..open_at];
+    let inner = &text[open_at + open.len()..close_at];
+    let after = &text[close_at + close.len()..];
+    Ok(format!("{}{}{}", before, inner, after).into_bytes())
+}
+
+fn serialize_tree_raw(tree: &XmlTree) -> io::Result<Vec<u8>> {
     let mut writer = Writer::new(Vec::new());
 
     if let Some(decl) = &tree.declaration {

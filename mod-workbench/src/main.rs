@@ -28,6 +28,7 @@ mod ui;
 mod validation;
 mod wizards;
 mod worker;
+mod xml_editor;
 mod xml_patcher;
 
 fn main() -> eframe::Result<()> {
