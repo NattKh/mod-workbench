@@ -1,0 +1,94 @@
+name: Upload to Nexus Mods
+
+# Fires automatically when a release is published. Uploads the release's
+# `mod-workbench.exe` asset to the Mod Workbench Nexus mod page
+# (https://www.nexusmods.com/crimsondesert/mods/2267).
+#
+# Mirrors the workflow used by CrimsonGameMods / Save Editor releases for
+# consistency across NattKh's repos. Single mod (this repo only ships
+# mod-workbench), so no tag-prefix routing — any `v<X>.<Y>.<Z>` tag works.
+#
+# REQUIRED CONFIG (set once in repo Settings → Secrets and variables → Actions):
+#   Secret:   NEXUSMODS_API_KEY            — Nexus personal API key.
+#   Variable: NEXUS_GROUP_MOD_WORKBENCH    — numeric file_group_id from
+#                                            the mod page's "API Info"
+#                                            section (currently 7379201
+#                                            for the "Mod Workbench
+#                                            alpha (1)" group).
+#
+# To run manually for a past release, use the workflow_dispatch trigger
+# below and pass the tag name.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to upload (e.g. v0.3.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pick mod info from tag
+        id: meta
+        env:
+          GROUP_MOD_WORKBENCH: ${{ vars.NEXUS_GROUP_MOD_WORKBENCH }}
+        run: |
+          tag="${{ steps.tag.outputs.name }}"
+          # Strip the leading "v" for the version Nexus shows. If the tag
+          # doesn't start with "v" we use it verbatim — Nexus accepts any
+          # string.
+          version="${tag#v}"
+          echo "group=$GROUP_MOD_WORKBENCH" >> "$GITHUB_OUTPUT"
+          echo "exe=mod-workbench.exe" >> "$GITHUB_OUTPUT"
+          echo "display=Mod Workbench" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ -z "${{ vars.NEXUS_GROUP_MOD_WORKBENCH }}" ]; then
+            echo "::error::Missing repo Variable NEXUS_GROUP_MOD_WORKBENCH. Set it under repo Settings → Secrets and variables → Actions → Variables (value = 7379201 for the Mod Workbench alpha (1) file group)."
+            exit 1
+          fi
+
+      - name: Download release exe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.tag.outputs.name }}"
+          exe="${{ steps.meta.outputs.exe }}"
+          gh release download "$tag" --repo "${{ github.repository }}" --pattern "$exe"
+          ls -la "$exe"
+
+      - name: Zip exe for Nexus upload
+        run: |
+          base="${{ steps.meta.outputs.exe }}"
+          base="${base%.exe}"
+          zip="${base}-${{ steps.meta.outputs.version }}.zip"
+          zip "$zip" "${{ steps.meta.outputs.exe }}"
+          echo "ZIP_NAME=$zip" >> "$GITHUB_ENV"
+          ls -la "$zip"
+
+      - name: Upload to Nexus Mods
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.4
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_group_id: ${{ steps.meta.outputs.group }}
+          filename: ${{ env.ZIP_NAME }}
+          version: ${{ steps.meta.outputs.version }}
+          display_name: "${{ steps.meta.outputs.display }} v${{ steps.meta.outputs.version }}"
+          description: |
+            Auto-uploaded from GitHub release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.tag.outputs.name }}
+          file_category: main
