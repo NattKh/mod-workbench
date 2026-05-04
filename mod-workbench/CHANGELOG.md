@@ -1,5 +1,86 @@
 # Mod Workbench — Changelog
 
+## v0.4.0 — search overhaul: working filter + cross-PABGB scan (2026-05-03)
+
+### Bug fix: per-table search never narrowed
+
+Reported case: typing `Equip_Magic_Scythe` or `1001196` into the entry-table
+search bar in iteminfo left the table showing "6236 of 6236 entries" — the
+filter wasn't actually being applied.
+
+Root cause: the debounce timer was being reset every frame the filter was
+dirty. The bump check compared `entry_filter` against `last_filter` (a
+snapshot from the last *recompute*) — and that always differs while the
+user is typing. So `last_filter_change` got bumped to `now` on every
+frame, the duration check `now - last_filter_change >= FILTER_DEBOUNCE`
+never passed, and `recompute_filter` never ran. The initial `(0..N)`
+all-pass `filtered_indices` carried through unchanged.
+
+Fix: added a `prev_frame_filter` field on `ActiveTable` and only bump
+`last_filter_change` when the filter text changes between consecutive
+frames (i.e. the user actually typed or deleted a character). Once the
+user pauses for 200 ms the recompute now fires and matches against:
+
+- `entry["key"]` numeric equality (decimal or `0x`-prefixed hex).
+- `entry["string_key"]` substring (case-insensitive).
+- Catalog-resolved name substring.
+- Localization-table substring (any numeric leaf treated as a possible
+  string hash and looked up in EN + KR).
+- Any nested string field, depth-limited.
+
+So `1001196` now matches by key and `Equip_Magic_Scythe` matches by
+`string_key`.
+
+### New: "Search all PABGBs" checkbox
+
+A new checkbox sits next to the search input. **Off by default** — the
+heavy path it enables loads ~120 tables from the game's PAZ on each
+fresh query, which is 30–60 s on a cold run. When ticked plus a
+non-empty filter plus 200 ms idle, the workbench fires a worker job that:
+
+1. Walks the entire table registry.
+2. For each: loads + parses via `table_loader::load_table` (so iteminfo
+   uses its dedicated loader, the rest go through the dispatch layer).
+3. Scans every entry against the filter (numeric key match, `string_key`
+   substring, plus a depth-limited nested-string walk).
+4. **Streams** every match back via `Reply::SearchHit` so results
+   accumulate in the panel as the scan progresses.
+5. Emits `Reply::SearchProgress` per table so the UI can render a
+   progress bar with the current table name.
+6. Finishes with `Reply::SearchComplete`, optionally carrying the first
+   error the scan encountered (errors are non-fatal — the scan keeps
+   going past a broken table and returns partial results).
+
+The entry-table view is replaced by a three-column results panel
+(`Table`, `Entry`, `Match`) when the checkbox is on. Clicking a hit
+opens its source table — focuses the existing tab if it's already open,
+otherwise pushes a placeholder + submits a `LoadTable` job and uses the
+`pending_xref_nav` machinery to pre-select the matched entry on arrival.
+The checkbox auto-disables on click so you land in the per-table view.
+
+Stale replies from a previous scan are discarded by `request_id` so
+typing a new filter mid-scan doesn't pollute the results — `app.rs`
+checks the id on every `SearchHit` / `SearchProgress` / `SearchComplete`
+reply and drops mismatches.
+
+### New / changed code
+
+- `src/state.rs` — added `prev_frame_filter` to `ActiveTable` (the bug
+  fix anchor) and a `GlobalSearchSession` carrying `enabled`,
+  `request_id`, `in_progress`, `scanned`/`total`, `current_table`,
+  streaming `hits`, and the first `error`.
+- `src/worker.rs` — added `Job::SearchAllPabgb` and three new replies
+  (`SearchHit`, `SearchProgress`, `SearchComplete`). Worker handler
+  loops every table, loads it on its thread, scans, and streams. Match
+  helper returns the first hit per entry — by numeric `key`, by
+  `string_key` substring, or by a recursive string-leaf walk with
+  dotted-path notation in the displayed match summary.
+- `src/app.rs::handle_worker_reply` — three new arms for the streaming
+  replies. Stale-id guard drops replies from earlier scans.
+- `src/ui/entry_table.rs` — checkbox in the search row, per-table-vs-
+  global counter swap, debounce-fix, scan kick-off, results panel with
+  `TableBuilder`, click-to-jump dispatch.
+
 ## v0.3.0 — full XML & PASEQ/PASTAGE editors (2026-05-03)
 
 The previous release shipped two tabs that called themselves "PASEQ Editor"

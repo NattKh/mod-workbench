@@ -229,9 +229,45 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
             }
         }
 
+        // "Search all PABGBs" toggle. Off by default — when on, the search
+        // turns into a worker-driven scan across every table in the
+        // registry instead of just the active tab. Streamed hits appear
+        // below; click any to jump to that entry.
+        let prev_global = state.global_search.enabled;
+        ui.checkbox(&mut state.global_search.enabled, "Search all PABGBs")
+            .on_hover_text(
+                "Scan every PABGB in the game's PAZ for matches against this \
+                 search box. Off by default because it loads ~120 tables from \
+                 disk; expect 30–60 s on a cold run. Streams results as it \
+                 finds them.",
+            );
+        if prev_global && !state.global_search.enabled {
+            // User turned it off — drop accumulated hits + invalidate
+            // any in-flight reply with a fresh request id.
+            state.global_search.hits.clear();
+            state.global_search.in_progress = false;
+            state.global_search.request_id = state.global_search.request_id.wrapping_add(1);
+        }
+
         let active_ref = state.active_table().unwrap();
         let total = active_ref.entries.len();
-        if state.entry_filter.is_empty() {
+        if state.global_search.enabled {
+            // When global search is active the per-table count is
+            // misleading — surface the global counters instead.
+            let hits = state.global_search.hits.len();
+            if state.global_search.in_progress {
+                ui.label(format!(
+                    "scanning {} / {}: {} hits",
+                    state.global_search.scanned,
+                    state.global_search.total,
+                    hits,
+                ));
+            } else if !state.entry_filter.is_empty() {
+                ui.label(format!("{} hit(s) across all PABGBs", hits));
+            } else {
+                ui.label("type a search to scan all PABGBs");
+            }
+        } else if state.entry_filter.is_empty() {
             ui.label(format!("{} entries", total));
         } else {
             ui.label(format!(
@@ -303,8 +339,15 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
     let entry_filter_snapshot = state.entry_filter.clone();
     let active = state.active_table_mut().unwrap();
     let now = Instant::now();
-    if active.last_filter != entry_filter_snapshot {
+
+    // Only bump `last_filter_change` when the filter ACTUALLY changed since
+    // last frame — i.e. the user just typed or deleted a character. The
+    // earlier code compared against `last_filter` (a snapshot from the last
+    // recompute), which always differs while typing, so the timer reset
+    // every frame and the recompute never fired. See `prev_frame_filter`.
+    if active.prev_frame_filter != entry_filter_snapshot {
         active.last_filter_change = now;
+        active.prev_frame_filter = entry_filter_snapshot.clone();
     }
 
     let filter_dirty = active.last_filter != entry_filter_snapshot;
@@ -319,6 +362,21 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
             .checked_sub(now.duration_since(active.last_filter_change))
             .unwrap_or_default();
         ui.ctx().request_repaint_after(remaining);
+    }
+
+    // ---- Global search kick-off ------------------------------------------
+    //
+    // When the "Search all PABGBs" checkbox is on AND the user has finished
+    // typing (debounce elapsed) AND the filter differs from the one we last
+    // kicked a scan with, fire a fresh worker job. Each kick bumps
+    // `request_id` so any in-flight replies from the previous scan are
+    // discarded by `app.rs::handle_worker_reply`.
+    if state.global_search.enabled
+        && !entry_filter_snapshot.is_empty()
+        && state.global_search.filter_at_kick != entry_filter_snapshot
+        && debounce_elapsed
+    {
+        kick_global_search(state, entry_filter_snapshot.clone());
     }
 
     // ---- F3: advance to next filtered match -------------------------------
@@ -345,6 +403,17 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                 active.selected_entry_idx = Some(visible[next_pos]);
             }
         }
+    }
+
+    // ---- Global search results panel -----------------------------------
+    //
+    // When the "Search all PABGBs" checkbox is on we replace the per-table
+    // entry view with a hits list streamed from the worker. Clicking a hit
+    // opens its source table (loading it if necessary) and jumps to the
+    // matched entry.
+    if state.global_search.enabled {
+        render_global_search_panel(ui, state);
+        return;
     }
 
     // ---- Render the filtered rows -----------------------------------------
@@ -734,6 +803,213 @@ fn walk_strings_match(value: &Value, filter_lower: &str, depth: u32) -> bool {
         // are matched separately by the numeric-key check above.
         _ => false,
     }
+}
+
+// ── Global search ───────────────────────────────────────────────────────────
+
+/// Submit a fresh `Job::SearchAllPabgb` to the worker. Bumps the request
+/// id so any in-flight replies from a previous scan are discarded by
+/// [`crate::app::WorkbenchApp::handle_worker_reply`]. Snapshots the
+/// registry so the worker has a stable list of tables to walk even if
+/// the registry mutates while the scan runs.
+fn kick_global_search(state: &mut AppState, filter: String) {
+    let Some(game_dir) = state.game_dir.clone() else {
+        state
+            .toasts
+            .warn("Set the Game Directory first (Settings panel).");
+        state.global_search.enabled = false;
+        return;
+    };
+
+    state.global_search.filter_at_kick = filter.clone();
+    state.global_search.request_id = state.global_search.request_id.wrapping_add(1);
+    state.global_search.in_progress = true;
+    state.global_search.scanned = 0;
+    state.global_search.total = state.tables.len();
+    state.global_search.current_table = String::new();
+    state.global_search.hits.clear();
+    state.global_search.error = None;
+
+    // Worker walks the registry snapshot; we hand it the lowercased filter
+    // and a parsed numeric form (so it can match key fields without
+    // re-parsing per entry).
+    let filter_lower = filter.to_lowercase();
+    let filter_as_number = parse_user_number(filter_lower.trim());
+
+    state.worker.submit(crate::worker::Job::SearchAllPabgb {
+        request_id: state.global_search.request_id,
+        game_dir,
+        filter: filter_lower,
+        filter_as_number,
+        tables: state.tables.clone(),
+    });
+}
+
+/// Render the global-search results: progress bar (when scanning) plus a
+/// scrollable list of hits. Clicking a row opens the source table (loads
+/// it if not already open) and selects the matched entry.
+fn render_global_search_panel(ui: &mut egui::Ui, state: &mut AppState) {
+    if state.global_search.in_progress {
+        let frac = if state.global_search.total > 0 {
+            state.global_search.scanned as f32 / state.global_search.total as f32
+        } else {
+            0.0
+        };
+        ui.add(egui::ProgressBar::new(frac).text(format!(
+            "Scanning {} / {}: {}",
+            state.global_search.scanned,
+            state.global_search.total,
+            state.global_search.current_table,
+        )));
+        ui.label(
+            egui::RichText::new(
+                "Streaming hits as the worker scans each table — \
+                 results may continue to grow until 'complete'.",
+            )
+            .small()
+            .weak(),
+        );
+        // Repaint so progress + new hits land without the user nudging
+        // the UI.
+        ui.ctx().request_repaint_after(Duration::from_millis(120));
+    }
+
+    if let Some(err) = &state.global_search.error {
+        ui.label(
+            egui::RichText::new(format!("Partial scan error: {}", err))
+                .color(egui::Color32::from_rgb(230, 180, 80))
+                .small(),
+        );
+    }
+
+    if state.global_search.hits.is_empty() && !state.global_search.in_progress {
+        ui.label(
+            egui::RichText::new(
+                "No hits yet. Type a search and untick the 'Search all PABGBs' \
+                 box to return to the per-table view.",
+            )
+            .color(egui::Color32::from_gray(160)),
+        );
+        return;
+    }
+
+    let mut clicked: Option<crate::worker::GlobalSearchHit> = None;
+
+    egui::ScrollArea::vertical()
+        .id_salt("global_search_results")
+        .auto_shrink([false; 2])
+        .show(ui, |ui| {
+            // Use a TableBuilder so columns line up regardless of label
+            // length. Three columns: table name, key + string_key, matched
+            // field summary.
+            use egui_extras::{Column, TableBuilder};
+            TableBuilder::new(ui)
+                .striped(true)
+                .resizable(true)
+                .column(Column::auto().at_least(140.0).clip(true))
+                .column(Column::auto().at_least(220.0).clip(true))
+                .column(Column::remainder().at_least(280.0).clip(true))
+                .header(20.0, |mut h| {
+                    h.col(|ui| {
+                        ui.label(egui::RichText::new("Table").strong());
+                    });
+                    h.col(|ui| {
+                        ui.label(egui::RichText::new("Entry").strong());
+                    });
+                    h.col(|ui| {
+                        ui.label(egui::RichText::new("Match").strong());
+                    });
+                })
+                .body(|body| {
+                    let hits = &state.global_search.hits;
+                    body.rows(20.0, hits.len(), |mut row| {
+                        let i = row.index();
+                        let hit = &hits[i];
+                        row.col(|ui| {
+                            ui.label(&hit.dispatch_name);
+                        });
+                        row.col(|ui| {
+                            let label = if hit.string_key.is_empty() {
+                                format!("key={}", hit.entry_key)
+                            } else {
+                                format!("{} ({})", hit.string_key, hit.entry_key)
+                            };
+                            if ui.link(label).clicked() {
+                                clicked = Some(hit.clone());
+                            }
+                        });
+                        row.col(|ui| {
+                            ui.label(&hit.matched);
+                        });
+                    });
+                });
+        });
+
+    if let Some(hit) = clicked {
+        jump_to_global_hit(state, hit);
+    }
+}
+
+/// Open the source table of a global-search hit and select the matched
+/// entry. If the table is already open as a tab, focuses it; otherwise
+/// records a `pending_xref_nav` so the worker reply that loads the table
+/// will pre-select the entry on arrival.
+fn jump_to_global_hit(state: &mut AppState, hit: crate::worker::GlobalSearchHit) {
+    // 1) Already open? Focus it and select the entry inline.
+    if let Some(idx) = state
+        .open_tabs
+        .iter()
+        .position(|t| t.dispatch_name == hit.dispatch_name)
+    {
+        state.active_tab_idx = Some(idx);
+        if let Some(tab) = state.open_tabs.get_mut(idx) {
+            if hit.entry_idx < tab.entries.len() {
+                tab.selected_entry_idx = Some(hit.entry_idx);
+            }
+        }
+        // Also turn off the global-search overlay so the user lands in
+        // the per-table view directly. The hits stay in `state.global_
+        // search.hits` so the user can re-tick the box and resume.
+        state.global_search.enabled = false;
+        return;
+    }
+
+    // 2) Not open — submit a load and remember which entry to focus.
+    let Some(meta) = state
+        .tables
+        .iter()
+        .find(|m| m.dispatch_name == hit.dispatch_name)
+        .cloned()
+    else {
+        state.toasts.warn(format!(
+            "Table '{}' isn't in the registry — can't open.",
+            hit.dispatch_name
+        ));
+        return;
+    };
+    let Some(game_dir) = state.game_dir.clone() else {
+        state.toasts.warn("Set the Game Directory first.");
+        return;
+    };
+
+    // Push a placeholder tab so the user gets immediate visual feedback.
+    let placeholder =
+        crate::state::ActiveTable::placeholder_loading(hit.dispatch_name.clone());
+    state.open_tabs.push(placeholder);
+    state.active_tab_idx = Some(state.open_tabs.len() - 1);
+
+    // Stash the entry idx as an xref-style nav so the load handler
+    // selects it on arrival. We re-resolve the entry by key on the UI
+    // side because the entries vec rebuilds on each load.
+    state.pending_xref_nav = Some((hit.dispatch_name.clone(), hit.entry_key));
+
+    state.worker.submit(crate::worker::Job::LoadTable {
+        dispatch_name: meta.dispatch_name.clone(),
+        game_dir,
+        pabgb_filename: meta.pabgb_filename.clone(),
+        pabgh_filename: meta.pabgh_filename.clone(),
+    });
+    state.global_search.enabled = false;
 }
 
 #[cfg(test)]

@@ -194,6 +194,12 @@ pub struct AppState {
     /// info to the artifact. Persists across showings so users don't have
     /// to retype between exports.
     pub metadata_dialog: MetadataDialog,
+    /// Global "search across every PABGB" session state. Off by default;
+    /// enabled by the checkbox next to the entry-table search bar. When
+    /// enabled the search drives a worker job that loads + scans every
+    /// table in the registry, streaming hits back. See
+    /// [`crate::worker::Job::SearchAllPabgb`].
+    pub global_search: GlobalSearchSession,
     /// Cached scan of the local mod library directory
     /// (`%APPDATA%/Crimson/ModWorkbench/mods/`). Populated lazily — the
     /// library panel triggers a refresh on first navigation, and any
@@ -288,10 +294,21 @@ pub struct ActiveTable {
     /// filter is empty this contains every index in order. Recomputed on a
     /// debounce — see [`Self::last_filter_change`].
     pub filtered_indices: Vec<usize>,
-    /// Wall-clock time of the most recent change to `entry_filter` that hasn't
-    /// yet been applied to `filtered_indices`. Used to debounce expensive
-    /// re-filters while the user is still typing.
+    /// Wall-clock time of the most recent **frame-to-frame change** in the
+    /// filter text. Used to debounce expensive re-filters while the user is
+    /// still typing. **Distinct from comparing against [`Self::last_filter`]**
+    /// — that one is a snapshot from the last recompute, so while the filter
+    /// is dirty (typed but not yet applied) it always differs. Bumping
+    /// `last_filter_change` against `last_filter` made the timer reset every
+    /// frame and the recompute never fired. We compare against
+    /// [`Self::prev_frame_filter`] instead, which only differs on frames where
+    /// the user actually edits the input.
     pub last_filter_change: Instant,
+    /// The filter text seen on the previous render frame. Updated every
+    /// frame; `last_filter_change` only bumps when this differs from the
+    /// current frame's filter. Initialised to empty so a freshly-loaded tab
+    /// with no filter doesn't trigger a spurious recompute on first render.
+    pub prev_frame_filter: String,
     /// Index into `entries` of the currently selected entry, scoped to this
     /// tab so switching tabs preserves each table's selection state.
     pub selected_entry_idx: Option<usize>,
@@ -335,6 +352,7 @@ impl ActiveTable {
             last_filter: String::new(),
             filtered_indices,
             last_filter_change: Instant::now(),
+            prev_frame_filter: String::new(),
             selected_entry_idx: None,
             changes: ChangeTracker::new(),
             history: EditHistory::default(),
@@ -359,6 +377,7 @@ impl ActiveTable {
             last_filter: String::new(),
             filtered_indices: Vec::new(),
             last_filter_change: Instant::now(),
+            prev_frame_filter: String::new(),
             selected_entry_idx: None,
             changes: ChangeTracker::new(),
             history: EditHistory::default(),
@@ -381,12 +400,66 @@ impl ActiveTable {
             last_filter: String::new(),
             filtered_indices: Vec::new(),
             last_filter_change: Instant::now(),
+            prev_frame_filter: String::new(),
             selected_entry_idx: None,
             changes: ChangeTracker::new(),
             history: EditHistory::default(),
             raw_pabgb: None,
             show_hex_view: false,
             hex_view_state: crate::ui::hex_view::HexViewState::default(),
+        }
+    }
+}
+
+/// Persistent state for the "Search all PABGBs" feature. The user toggles
+/// this on via the checkbox next to the entry-table search bar; we then
+/// drive a worker job that loads + scans every table in the registry and
+/// streams hits back. The session tracks:
+///
+/// - Whether the checkbox is enabled.
+/// - The `request_id` of the currently-running scan so stale replies from
+///   an earlier query (e.g. user changed the filter mid-scan) can be
+///   discarded by `app.rs` instead of corrupting the live results.
+/// - The filter the current scan was kicked off against — used to detect
+///   when the user has typed something new and a fresh scan is needed.
+/// - Progress counters and the hits accumulated so far.
+pub struct GlobalSearchSession {
+    /// Checkbox state; off by default. When the user ticks it, the next
+    /// debounce-elapsed filter change kicks off a scan.
+    pub enabled: bool,
+    /// Filter the current scan was kicked off against. Empty when no
+    /// scan is in flight or has been started for this session.
+    pub filter_at_kick: String,
+    /// Monotonic counter — bumped each time we kick a new scan so old
+    /// replies can be filtered out by ID.
+    pub request_id: u64,
+    /// True between kick-off and `Reply::SearchComplete`.
+    pub in_progress: bool,
+    /// Tables scanned so far in the current run.
+    pub scanned: usize,
+    /// Total tables in the current run (snapshot of the registry size).
+    pub total: usize,
+    /// Name of the table currently being scanned (for the progress line).
+    pub current_table: String,
+    /// Accumulated hits, ordered by arrival.
+    pub hits: Vec<crate::worker::GlobalSearchHit>,
+    /// First error encountered during the run, if any (non-fatal — the
+    /// scan continues after individual table failures).
+    pub error: Option<String>,
+}
+
+impl Default for GlobalSearchSession {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            filter_at_kick: String::new(),
+            request_id: 0,
+            in_progress: false,
+            scanned: 0,
+            total: 0,
+            current_table: String::new(),
+            hits: Vec::new(),
+            error: None,
         }
     }
 }
@@ -480,6 +553,7 @@ impl AppState {
             entry_search_focus_pending: false,
             entry_search_advance_pending: false,
             metadata_dialog: MetadataDialog::default(),
+            global_search: GlobalSearchSession::default(),
             // Mod library + profile store. Both load lazily — the library
             // panel kicks off its first scan on initial navigation, and we
             // try to read the profile store from disk here so any saved

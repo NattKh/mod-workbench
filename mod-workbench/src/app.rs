@@ -1095,6 +1095,36 @@ impl WorkbenchApp {
                 // A future pass can render a per-job progress bar somewhere.
                 self.state.status = format!("{}: {}", job_label, message);
             }
+            // Stale replies from a previous global-search scan are discarded
+            // by checking the request_id against the live session. Fresh
+            // hits append to the live results vec.
+            worker::Reply::SearchHit { request_id, hit } => {
+                if request_id == self.state.global_search.request_id {
+                    self.state.global_search.hits.push(hit);
+                }
+            }
+            worker::Reply::SearchProgress {
+                request_id,
+                scanned,
+                total,
+                current_table,
+            } => {
+                if request_id == self.state.global_search.request_id {
+                    self.state.global_search.scanned = scanned;
+                    self.state.global_search.total = total;
+                    self.state.global_search.current_table = current_table;
+                }
+            }
+            worker::Reply::SearchComplete { request_id, error } => {
+                if request_id == self.state.global_search.request_id {
+                    self.state.global_search.in_progress = false;
+                    self.state.global_search.error = error;
+                    let count = self.state.global_search.hits.len();
+                    self.state
+                        .toasts
+                        .info(format!("Global search complete — {} hit(s).", count));
+                }
+            }
         }
     }
 
