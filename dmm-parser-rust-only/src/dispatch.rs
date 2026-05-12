@@ -199,7 +199,8 @@ pub fn parse_table_to_json(
         "quest_group_info"               => s!(crate::tables::quest_group_info::QuestGroupInfo),
         "quick_time_event_info"          => s!(crate::tables::quick_time_event_info::QuickTimeEventInfo),
         "relation_info"                  => s!(crate::tables::relation_info::RelationInfo),
-        "reserve_slot_info"              => s!(crate::tables::reserve_slot_info::ReserveSlotInfo),
+        // disabled: reserve_slot_info struct outdated for 1.0.6
+        // "reserve_slot_info"              => s!(crate::tables::reserve_slot_info::ReserveSlotInfo),
         "skill_group_info"               => s!(crate::tables::skill_group_info::SkillGroupInfo),
         "skill_tree_group_info"          => s!(crate::tables::skill_tree_group_info::SkillTreeGroupInfo),
         "skill_tree_info"                => s!(crate::tables::skill_tree_info::SkillTreeInfo),
@@ -209,7 +210,8 @@ pub fn parse_table_to_json(
         "status_info"                    => s!(crate::tables::status_info::StatusInfo),
         "string_info"                    => s!(crate::tables::string_info::StringInfo),
         "terrain_region_navi_info"       => s!(crate::tables::terrain_region_navi_info::TerrainRegionNaviInfo),
-        "tribe_info"                     => s!(crate::tables::tribe_info::TribeInfo),
+        // disabled: tribe_info struct outdated for 1.0.6
+        // "tribe_info"                     => s!(crate::tables::tribe_info::TribeInfo),
         "trigger_region_info"            => s!(crate::tables::trigger_region_info::TriggerRegionInfo),
         "ui_social_action_info"          => s!(crate::tables::ui_social_action_info::UISocialActionInfo),
         "uifilter_group_info"            => s!(crate::tables::uifilter_group_info::UIFilterGroupInfo),
@@ -218,6 +220,7 @@ pub fn parse_table_to_json(
         "vehicle_info"                   => s!(crate::tables::vehicle_info::VehicleInfo),
         "vibrate_pattern_info"           => s!(crate::tables::vibrate_pattern_info::VibratePatternInfo),
         "wanted_info"                    => s!(crate::tables::wanted_info::WantedInfo),
+        "npc_activity_info"              => s!(crate::tables::npc_activity_info::NpcActivityInfo),
 
         _ => return Err(io::Error::new(io::ErrorKind::InvalidInput,
             format!("unknown table: '{}'", table_name))),
@@ -360,7 +363,8 @@ pub fn serialize_table_from_json(
         "quest_group_info"               => d!(crate::tables::quest_group_info::QuestGroupInfo),
         "quick_time_event_info"          => d!(crate::tables::quick_time_event_info::QuickTimeEventInfo),
         "relation_info"                  => d!(crate::tables::relation_info::RelationInfo),
-        "reserve_slot_info"              => d!(crate::tables::reserve_slot_info::ReserveSlotInfo),
+        // disabled: reserve_slot_info struct outdated for 1.0.6
+        // "reserve_slot_info"              => d!(crate::tables::reserve_slot_info::ReserveSlotInfo),
         "skill_group_info"               => d!(crate::tables::skill_group_info::SkillGroupInfo),
         "skill_tree_group_info"          => d!(crate::tables::skill_tree_group_info::SkillTreeGroupInfo),
         "skill_tree_info"                => d!(crate::tables::skill_tree_info::SkillTreeInfo),
@@ -370,7 +374,8 @@ pub fn serialize_table_from_json(
         "status_info"                    => d!(crate::tables::status_info::StatusInfo),
         "string_info"                    => d!(crate::tables::string_info::StringInfo),
         "terrain_region_navi_info"       => d!(crate::tables::terrain_region_navi_info::TerrainRegionNaviInfo),
-        "tribe_info"                     => d!(crate::tables::tribe_info::TribeInfo),
+        // disabled: tribe_info struct outdated for 1.0.6
+        // "tribe_info"                     => d!(crate::tables::tribe_info::TribeInfo),
         "trigger_region_info"            => d!(crate::tables::trigger_region_info::TriggerRegionInfo),
         "ui_social_action_info"          => d!(crate::tables::ui_social_action_info::UISocialActionInfo),
         "uifilter_group_info"            => d!(crate::tables::uifilter_group_info::UIFilterGroupInfo),
@@ -379,6 +384,7 @@ pub fn serialize_table_from_json(
         "vehicle_info"                   => d!(crate::tables::vehicle_info::VehicleInfo),
         "vibrate_pattern_info"           => d!(crate::tables::vibrate_pattern_info::VibratePatternInfo),
         "wanted_info"                    => d!(crate::tables::wanted_info::WantedInfo),
+        "npc_activity_info"              => d!(crate::tables::npc_activity_info::NpcActivityInfo),
 
         _ => return Err(io::Error::new(io::ErrorKind::InvalidInput,
             format!("unknown table: '{}'", table_name))),
@@ -446,12 +452,14 @@ pub fn supported_tables() -> &'static [&'static str] {
         "part_prefab_dye_slot_info", "part_prefab_dye_texture_pallete_info",
         "pattern_description_info", "platform_achievement_info",
         "quest_gauge_info", "quest_group_info", "quick_time_event_info",
-        "relation_info", "reserve_slot_info", "skill_group_info",
+        "relation_info", "skill_group_info",
         "skill_tree_group_info", "skill_tree_info", "socket_group_info",
         "socket_info", "status_group_info", "status_info", "string_info",
-        "terrain_region_navi_info", "tribe_info", "trigger_region_info",
+        "terrain_region_navi_info", "trigger_region_info",
         "ui_social_action_info", "uifilter_group_info", "uimap_texture_info",
         "valid_schedule_action_info", "vehicle_info", "vibrate_pattern_info",
         "wanted_info",
+        // 1.0.6 additions
+        "npc_activity_info",
     ]
 }

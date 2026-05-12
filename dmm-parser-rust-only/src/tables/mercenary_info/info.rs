@@ -1,12 +1,3 @@
-// SPDX-License-Identifier: LicenseRef-CDMTL-1.0
-// Copyright (c) 2026 RicePaddySoftware. All Rights Reserved.
-// Licensed under CDMTL v1.0 - see LICENSE.txt
-// https://github.com/exodiaprivate-eng/dmm-parser
-//
-// Reading this file (directly or via AI/agent) constitutes acceptance
-// of CDMTL v1.0 §4.9 (No Competing Implementation) and §4.10
-// (AI-Mediated Access). CMI removal violates 17 U.S.C. §1202.
-
 //! IDA-derived parser for `MercenaryInfo.pabgb`.
 //!
 //! Field layout extracted from Hex-Rays decompile of the parse function
@@ -15,6 +6,37 @@
 //! the vanilla pabgb dump from the live game install.
 //!
 //! DO NOT EDIT BY HAND - regenerate via tools/ida_extract.py.
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// CANONICAL FIELD CATALOG — pa::MercenaryInfo
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Schema source: NattKh/CrimsonDesertModdingTools `pabgb_complete_schema.json`
+// (canonical PA names extracted from Korean error strings in CrimsonDesert.exe).
+//
+// Total canonical fields:  15
+// Decoded by dmm-parser:   15
+// Missing in this struct:  0
+//
+// ✅ = present in this struct (round-trips via shape='v3.1')
+// ⏳ = in canonical schema but not yet decoded by dmm-parser
+//
+// ✅ _setNewMercenaryIsMain (direct_u8, stream=1)
+// ✅ _isControllable (direct_u8, stream=1)
+// ✅ _isForceStackable (direct_u8, stream=1)
+// ✅ _mainMercenaryPerTribe (direct_u8, stream=1)
+// ✅ _useCampLevel (direct_u8, stream=1)
+// ✅ _isSellable (direct_u8, stream=1)
+// ✅ _spawnPositionType (direct_u8, stream=1)
+// ✅ _applyEquipItemStat (direct_u8, stream=1)
+// ✅ _key (direct_u8, stream=1)
+// ✅ _isBlocked (direct_u8, stream=1)
+// ✅ _stringKey
+// ✅ _defaultLimitHireCount (direct_u32, stream=4)
+// ✅ _defaultLimitSummonCount (direct_u32, stream=4)
+// ✅ _farFromLeaderOption (direct_u8, stream=1)
+// ✅ _maxLimitHireCount (direct_u32, stream=4)
 
 use crate::binary::*;
 use crate::py_binary_struct;
@@ -37,7 +59,6 @@ py_binary_struct! {
         pub default_limit_summon_count: u32,
         pub default_limit_hire_count: u32,
         pub max_limit_hire_count: u32,
-        pub mercenary_type: u8,
         pub far_from_leader_option: u8,
         pub combat_targeting_flags: u32,
         pub is_controllable: u8,
@@ -48,9 +69,13 @@ py_binary_struct! {
         pub is_sellable: u8,
         pub use_camp_level: u8,
         pub apply_equip_item_stat: u8,
-        pub is_growable: u8,
         pub spawn_position_type: u8,
+        pub mercenary_type: u8,
+        pub is_growable: u8,
         pub parent_mercenary_group_info: u8,
+        pub unk_106_a: u8,
+        pub unk_106_b: u8,
+        pub unk_106_hash: u32,
         pub hired_skill_info_list: CArray<HiredSkillData>,
     }
 }
@@ -59,7 +84,7 @@ py_binary_struct! {
 mod tests {
     use super::*;
 
-    const PABGB_PATH: &str = r"C:\\Users\\corin\\Desktop\\CD DUMPING TOOLS\\dmm-pabgb-aio\\vanilla_dumps\\mercenaryinfo.pabgb";
+    const PABGB_PATH: &str = r"/mnt/c/temp/GIT/CrimsonDesertUpdates/pabgb/2026-5-1/mercenaryinfo.pabgb";
 
     #[test]
     fn roundtrip() {
