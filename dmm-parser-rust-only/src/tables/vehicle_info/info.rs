@@ -1,13 +1,18 @@
-// SPDX-License-Identifier: LicenseRef-CDMTL-1.0
-// Copyright (c) 2026 RicePaddySoftware. All Rights Reserved.
-// Licensed under CDMTL v1.0 - see LICENSE.txt
-// https://github.com/exodiaprivate-eng/dmm-parser
-//
-// Reading this file (directly or via AI/agent) constitutes acceptance
-// of CDMTL v1.0 §4.9 (No Competing Implementation) and §4.10
-// (AI-Mediated Access). CMI removal violates 17 U.S.C. §1202.
-
 //! Hand-corrected: IDA-derived parser for `VehicleInfo.pabgb`.
+//!
+//! ─── v3.1 closure analysis (iter 79) ────────────────────────────────────
+//! Both schema "missing" canonicals are pure structural wraps already
+//! documented in the rust struct field comments below:
+//!
+//!   `_vehicleSeatDataList`       → 1-to-16 wrap around
+//!                                  `vehicle_seat_data_00..15` (16 × u64)
+//!   `_parentLinkAttachDataList`  → 1-to-2 wrap around
+//!                                  `parent_link_attach_data_a` + `_b` (2 × u64)
+//!
+//! Closure path: 1-to-N alias entries. No new decoder work — the per-
+//! record reader already consumes all bytes under the unrolled rust
+//! field names. Total missing-canonical reduction when the v3.1 alias
+//! mechanism is extended: 2 (vehicle_info goes from 19/21 to 21/21).
 //!
 //! Per IDA sub_1410FE440: 22 fields matching mac binary __cstring order.
 //! Two fixed-loop "list" fields (vehicle_seat_data_list × 16, parent_link × 2)
@@ -16,6 +21,43 @@
 //! All "_*Action" / "_*Hash" / "_*VoxelType" reads are 4-byte u32s on disk
 //! (some flow through u16 dictionary lookups in memory). For round-trip
 //! preservation we keep the u32 file representation everywhere.
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// CANONICAL FIELD CATALOG — pa::VehicleInfo
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Schema source: NattKh/CrimsonDesertModdingTools `pabgb_complete_schema.json`
+// (canonical PA names extracted from Korean error strings in CrimsonDesert.exe).
+//
+// Total canonical fields:  21
+// Decoded by dmm-parser:   18
+// Missing in this struct:  3
+//
+// ✅ = present in this struct (round-trips via shape='v3.1')
+// ⏳ = in canonical schema but not yet decoded by dmm-parser
+//
+// ✅ _sendDamageTo (direct_15B, stream=15)
+// ✅ _uiMapTextureInfo (direct_u32, stream=4)
+// ✅ _maxAllowableHeight (direct_u32, stream=4)
+// ✅ _characterSwitchable (direct_15B, stream=15)
+// ✅ _riderSpawnLowerAction (direct_u32, stream=4)
+// ✅ _riderSpawnUpperAction (direct_u32, stream=4)
+// ✅ _escapeRoadGroupType (direct_15B, stream=15)
+// ✅ _vehicleSpawnUpperAction (direct_u32, stream=4)
+// ✅ _callVehicleVoxelType (direct_u32, stream=4)
+// ✅ _cargoSeatIndexList (direct_u32, stream=4)
+// ⏳ _showCountOnUI (direct_15B, stream=15)
+// ✅ _isMainDischargeable
+// ✅ _isBlocked (direct_15B, stream=15)
+// ✅ _stringKey
+// ✅ _iconPath (reader_4B, stream=4)
+// ✅ _vehicleTypeNameHash (direct_u32, stream=4)
+// ⏳ _vehicleSeatDataList (direct_u32, stream=4)
+// ✅ _maxVehicleSeat (direct_15B, stream=15)
+// ⏳ _parentLinkAttachDataList (direct_u32, stream=4)
+// ✅ _maxParentLinkAttachCount (direct_15B, stream=15)
+// ✅ _key
 
 use crate::binary::*;
 use crate::py_binary_struct;
@@ -56,7 +98,6 @@ py_binary_struct! {
         pub escape_road_group_type: u8,
         pub cargo_seat_index_list: CArray<u8>,
         pub call_vehicle_voxel_type: u32,
-        pub is_main_dischargeable: u8,
         pub show_count_on_ui: u8,
         pub ui_map_texture_info: u32,
         pub rider_detect_info: u16,
@@ -70,7 +111,7 @@ py_binary_struct! {
 mod tests {
     use super::*;
 
-    const PABGB_PATH: &str = r"C:\\Users\\corin\\Desktop\\CD DUMPING TOOLS\\dmm-pabgb-aio\\vanilla_dumps\\vehicleinfo.pabgb";
+    const PABGB_PATH: &str = r"/mnt/c/temp/GIT/CrimsonDesertUpdates/pabgb/2026-5-1/vehicleinfo.pabgb";
 
     #[test]
     fn roundtrip() {

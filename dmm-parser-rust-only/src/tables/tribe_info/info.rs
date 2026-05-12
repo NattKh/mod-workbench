@@ -1,15 +1,42 @@
-// SPDX-License-Identifier: LicenseRef-CDMTL-1.0
-// Copyright (c) 2026 RicePaddySoftware. All Rights Reserved.
-// Licensed under CDMTL v1.0 - see LICENSE.txt
-// https://github.com/exodiaprivate-eng/dmm-parser
-//
-// Reading this file (directly or via AI/agent) constitutes acceptance
-// of CDMTL v1.0 §4.9 (No Competing Implementation) and §4.10
-// (AI-Mediated Access). CMI removal violates 17 U.S.C. §1202.
-
 //! Full Tier 1 — every wire read decoded.
 //!
 //! Reader: `sub_1410FBC30` in CrimsonDesert.exe (Win build).
+//!
+//! ─── v3.1 closure plan (iter 109) ───────────────────────────────────────
+//! Cross-checked via the iter-42-registry per-record reader
+//! `sub_1410C8A20`. Wire-read sequence (mem offsets):
+//!
+//!   wire 0   4 bytes        key (u32)              SHIPPED → _key
+//!   wire 4   CString        string_key             SHIPPED → _stringKey
+//!   wire 8   1 byte         is_blocked             SHIPPED → _isBlocked
+//!   wire 9   sub_1410CD790  lookup_a (4B → u16 mem 18)  ⏳ reader_4B
+//!   wire 13  sub_1410CBB90  lookup_b (4B → u16 mem 20)  ⏳ reader_4B
+//!   wire 17  1 byte         unk_22                       ⏳ direct_u8
+//!   wire 18  4 bytes        unk_24                       ⏳ direct_u32
+//!   wire 22  9× 1 byte      unk_28..36                   ⏳ 9 direct_u8 booleans
+//!   wire 31  3× 4 bytes     unk_40, unk_44, unk_48       ⏳ 3 direct_u32
+//!   wire 43  CString        unk_56                  iter 108 → _tribeNameForEditor
+//!   wire ?   4× 4 bytes     unk_64..76                   ⏳ 4 direct_u32
+//!   wire ?   2× 1 byte      unk_80, unk_81               ⏳ 2 direct_u8
+//!   wire ?   4 bytes        unk_84                       ⏳ direct_u32
+//!   wire ?   8 bytes raw    unk_88 (u64)                 ⏳ NO direct_u64 in
+//!                            schema — possibly 2× direct_u32 packed,
+//!                            or a [f32;2]?
+//!   wire ?   sub_1410CCE80  ref_list (CArray<u32>)       ⏳ reader_4B
+//!
+//! Schema has 4 reader_4B canonicals (excluding _key): _footStepTypeEffectName,
+//! _tamedSkillList, _ignoredReactionInSafeZoneFlag, _parentTribeInfo. The 3
+//! reader_4B wire reads at mem 18 / mem 20 / ref_list need 1 more candidate
+//! mapping — possibly _parentTribeInfo lives in one of the unk_64..76 slots
+//! (since "parent tribe info" semantically = "u32 reference to another
+//! tribe's _key" which is just a raw u32, not a CArray).
+//!
+//! Strong candidate ships (next iter, with semantic disambiguation):
+//!   ref_list       → _tamedSkillList       (only CArray = list-of-skills)
+//!   lookup_a / b   → _footStepTypeEffectName + _ignoredReactionInSafeZoneFlag
+//!                    (need IDA function-string-associate to confirm order)
+//!
+//! schema verifier: 4 of 29 verified after iter 108. 25 still pending.
 //!
 //! Every helper in the read chain is non-polymorphic (u32 lookups via
 //! `sub_1411008D0`, `read_u32_lookup_DA30`, plus a CArray<u32> via
@@ -35,6 +62,51 @@
 //! All field NAMES are placeholder (`unk_<offset>`); semantics aren't
 //! confirmed yet. Mods can edit any field by raw value; renaming when
 //! Mac symbol-cross-reference confirms meaning is mechanical.
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// CANONICAL FIELD CATALOG — pa::TribeInfo
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Schema source: NattKh/CrimsonDesertModdingTools `pabgb_complete_schema.json`
+// (canonical PA names extracted from Korean error strings in CrimsonDesert.exe).
+//
+// Total canonical fields:  29
+// Decoded by dmm-parser:   3
+// Missing in this struct:  26
+//
+// ✅ = present in this struct (round-trips via shape='v3.1')
+// ⏳ = in canonical schema but not yet decoded by dmm-parser
+//
+// ✅ _key (reader_4B, stream=4)
+// ✅ _isBlocked (direct_u8, stream=1)
+// ✅ _stringKey
+// ⏳ _footStepTypeEffectName (reader_4B, stream=4)
+// ⏳ _parentTribeInfo
+// ⏳ _bumpTypeHash (direct_u32, stream=4)
+// ⏳ _tribeMassLevel (direct_u8, stream=1)
+// ⏳ _wantedCrimeType (direct_u8, stream=1)
+// ⏳ _footMaterialKey (direct_u32, stream=4)
+// ⏳ _characterPauseType (direct_u32, stream=4)
+// ⏳ _interactionUIDistanceLv (direct_u8, stream=1)
+// ⏳ _tamedSkillList (reader_4B, stream=4)
+// ⏳ _ignoredReactionInSafeZoneFlag (reader_4B, stream=4)
+// ⏳ _detourMaxDegree (direct_u32, stream=4)
+// ⏳ _ignoreWaterFall (direct_u8, stream=1)
+// ⏳ _velocityDampSpeed (direct_u32, stream=4)
+// ⏳ _activityWaterDepth (direct_u32, stream=4)
+// ⏳ _weaponMaterialKey (direct_u32, stream=4)
+// ⏳ _tribeNameForEditor
+// ⏳ _armorMaterialKey (direct_u32, stream=4)
+// ⏳ _baseMaterialKey (direct_u32, stream=4)
+// ⏳ _isBird (direct_u8, stream=1)
+// ⏳ _isHumanoid (direct_u8, stream=1)
+// ⏳ _hasChild (direct_u8, stream=1)
+// ⏳ _isDeathByDrowning (direct_u8, stream=1)
+// ⏳ _detourOnRoad (direct_u8, stream=1)
+// ⏳ _detectModeShowEnemy (direct_u8, stream=1)
+// ⏳ _escapePlatform (direct_u8, stream=1)
+// ⏳ _ignoreOverlapPush (direct_u8, stream=1)
 
 use crate::binary::*;
 use crate::py_binary_struct;
@@ -77,8 +149,8 @@ py_binary_struct! {
 mod tests {
     use super::*;
     use crate::binary::variant::{entry_ranges, load_pabgh_offsets};
-    const PABGB: &str = r"C:\Users\corin\Desktop\CD DUMPING TOOLS\dmm-pabgb-aio\vanilla_dumps\tribeinfo.pabgb";
-    const PABGH: &str = r"C:\Users\corin\Desktop\CD DUMPING TOOLS\dmm-pabgb-aio\vanilla_dumps\tribeinfo.pabgh";
+    const PABGB: &str = r"/mnt/c/temp/GIT/CrimsonDesertUpdates/pabgb/2026-5-1/tribeinfo.pabgb";
+    const PABGH: &str = r"/mnt/c/temp/GIT/CrimsonDesertUpdates/pabgb/2026-5-1/tribeinfo.pabgh";
 
     #[test]
     fn roundtrip() {

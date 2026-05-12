@@ -2047,7 +2047,7 @@ pub enum ConditionDataVariant<'a> {
     ConditionData_CheckPositionOwnerFaction(ConditionData_CheckPositionOwnerFactionPayload),
     ConditionData_CheckCharacterItemSocket(ConditionData_CheckCharacterItemSocketPayload),
     ConditionData_CheckGimmickItemSocket,
-    ConditionData_CheckCurrentEquipType_OrTag286,
+    ConditionData_CheckCurrentEquipType_OrTag286(TwoU32BodyPayload),
     ConditionData_IsInSpecialModeStage(OneU32BodyPayload),
     ConditionData_IsSpawnedOnPlatform,
     ConditionData_GetInventoryWeightLevel(ConditionData_GetInventoryWeightLevelPayload),
@@ -2298,284 +2298,284 @@ impl<'a> ConditionDataVariant<'a> {
             Self::ConditionData_CheckRepairableNpc => 124,
             Self::ConditionData_CheckSpecialMode(_) => 125,
             Self::ConditionData_SpecialModeKey(_) => 126,
-            Self::ConditionData_IsInRegion(_) => 127,
-            Self::ConditionData_IsInTown => 128,
-            Self::ConditionData_IsAboveRoad(_) => 129,
-            Self::ConditionData_IsInRegionType => 130,
-            Self::ConditionData_IsInSafeZone => 131,
-            Self::ConditionData_CheckTargetable(_) => 132,
-            Self::ConditionData_CheckRetreat => 133,
-            Self::ConditionData_CheckContactableState => 134,
-            Self::ConditionData_CheckTargetToPushInventory(_) => 135,
-            Self::ConditionData_CheckInventorySlotFreeCount(_) => 136,
-            Self::ConditionData_CheckCharacterHeightType => 137,
-            Self::ConditionData_CheckUnlockDoorCharacter => 138,
-            Self::ConditionData_CheckOwnerMercenary => 139,
-            Self::ConditionData_CheckIsFocusActorOwnerMercenary => 140,
-            Self::ConditionData_CheckGimmickEventParamString(_) => 141,
-            Self::ConditionData_CheckGimmickEventParamFloat(_) => 142,
-            Self::ConditionData_CheckGimmickEventParamInt(_) => 143,
-            Self::ConditionData_CheckGimmickEventParamAngle(_) => 144,
-            Self::ConditionData_CheckCCType(_) => 145,
-            Self::ConditionData_CheckField(_) => 146,
-            Self::ConditionData_IsTarget(_) => 147,
-            Self::ConditionData_GetFriendly(_) => 148,
-            Self::ConditionData_CheckFriendlyLevel(_) => 149,
-            Self::ConditionData_GetFactionfriendly(_) => 150,
-            Self::ConditionData_IsFriendlyItem => 151,
-            Self::ConditionData_IsVaryableFriendly => 152,
-            Self::ConditionData_IsPetLooting => 153,
-            Self::ConditionData_CheckWaterVoxel => 154,
-            Self::ConditionData_CheckEquipItemGroup(_) => 155,
-            Self::ConditionData_CheckLoadingStep(_) => 156,
-            Self::ConditionData_CheckGimmickEventSenderName(_) => 157,
-            Self::ConditionData_CheckGetItem(_) => 158,
-            Self::ConditionData_CheckSealActor(_) => 159,
-            Self::ConditionData_CheckWildVehicle => 160,
-            Self::ConditionData_CheckWild => 161,
-            Self::ConditionData_CheckAIReadyToNextTimeline => 162,
-            Self::ConditionData_AITaskSetComplete => 163,
-            Self::ConditionData_CheckAttachedGimmickCount(_) => 164,
-            Self::ConditionData_CheckRemoteCatchTarget(_) => 165,
-            Self::ConditionData_CheckRemoteCatchTargetItemKey(_) => 166,
-            Self::ConditionData_CheckRemoteCatchable => 167,
-            Self::ConditionData_CheckGimmickEvent(_) => 168,
-            Self::ConditionData_IsThrowing => 169,
-            Self::ConditionData_CheckLoadedArrow => 170,
-            Self::ConditionData_CheckRemoteCatched => 171,
-            Self::ConditionData_CheckCatched => 172,
-            Self::ConditionData_CheckStageChartDialogEnd(_) => 173,
-            Self::ConditionData_CheckRider(_) => 174,
-            Self::ConditionData_CheckGimmickTarget(_) => 175,
-            Self::ConditionData_GetGimmickVariable(_) => 176,
-            Self::ConditionData_GetRandomPercentBySpawnPositionSeed(_) => 177,
-            Self::ConditionData_CheckStoreType(_) => 178,
-            Self::ConditionData_IsExistStoreItemToSell => 179,
-            Self::ConditionData_CheckNpcFunctionType(_) => 180,
-            Self::ConditionData_CheckExistPrice => 181,
-            Self::ConditionData_SubTimelineName(_) => 182,
-            Self::ConditionData_ExistTimeline(_) => 183,
-            Self::ConditionData_ExistFolder(_) => 184,
-            Self::ConditionData_ExistSequencerCamera => 185,
-            Self::ConditionData_IsCutJump => 186,
-            Self::ConditionData_CheckReserveItemSlotOut(_) => 187,
-            Self::ConditionData_CheckGateOpenable => 188,
-            Self::ConditionData_CheckGimmickItemKey(_) => 189,
-            Self::ConditionData_CheckTargetGimmickUnlockable => 190,
-            Self::ConditionData_CheckUnlockableByMission => 191,
-            Self::ConditionData_CheckMainMercenarySummoned(_) => 192,
-            Self::ConditionData_CheckMainMercenaryNearToLeader(_) => 193,
-            Self::ConditionData_CheckMainMercenaryHaveItemGroupPrice(_) => 194,
-            Self::ConditionData_CheckHaveMercenary(_) => 195,
-            Self::ConditionData_CheckHaveVehicle(_) => 196,
-            Self::ConditionData_CheckGimmickImpulseWhereType(_) => 197,
-            Self::ConditionData_CheckElementalMaterialStateSuccess(_) => 198,
-            Self::ConditionData_CheckCurrentEquipType_OrTag199 => 199,
-            Self::ConditionData_CheckBurnable => 200,
-            Self::ConditionData_CheckBreakable => 201,
-            Self::ConditionData_CheckOriginalBreakable => 202,
-            Self::ConditionData_CheckBreaked => 203,
-            Self::ConditionData_IsDockingChild => 204,
-            Self::ConditionData_CheckTriggerVolumeGroupIndex(_) => 205,
-            Self::ConditionData_Weather(_) => 206,
-            Self::ConditionData_CheckGimmickParentLinkCount(_) => 207,
-            Self::ConditionData_CheckGimmickRemoteCatchType => 208,
-            Self::ConditionData_CheckGimmickTriggerCount(_) => 209,
-            Self::ConditionData_IsFullGimmickAttachment => 210,
-            Self::ConditionData_CheckGimmickAttachmentType => 211,
-            Self::ConditionData_CheckGimmickTargetCount(_) => 212,
-            Self::ConditionData_CheckGimmickNonBreakTargetCount(_) => 213,
-            Self::ConditionData_CheckExistStealItem(_) => 214,
-            Self::ConditionData_CheckElementalMaterialType => 215,
-            Self::ConditionData_IsGimmickSealComplete => 216,
-            Self::ConditionData_IsAcquiredItem => 217,
-            Self::ConditionData_IsFullGimmickTriggerEnteredTarget(_) => 218,
-            Self::ConditionData_CheckGimmickLinkSignalOn => 219,
-            Self::ConditionData_CheckGimmickLookAtComplete => 220,
-            Self::ConditionData_CheckAttackImpulseLevel(_) => 221,
-            Self::ConditionData_CheckBreakableAttackImpulseLevel => 222,
-            Self::ConditionData_CheckSpawnReason(_) => 223,
-            Self::ConditionData_CheckFriendlyItemReward => 224,
-            Self::ConditionData_CheckNearestTriggerTargetDistance(_) => 225,
-            Self::ConditionData_CheckHasMagneticPartner => 226,
-            Self::ConditionData_CheckForceFieldType => 227,
-            Self::ConditionData_CheckForceFieldTargetType => 228,
-            Self::ConditionData_CheckExistDropItem => 229,
-            Self::ConditionData_CheckGlobalStageSequencerExit(_) => 230,
-            Self::ConditionData_CheckSealable(_) => 231,
-            Self::ConditionData_CheckTargetSealable => 232,
-            Self::ConditionData_CheckSealState => 233,
-            Self::ConditionData_HasSealDropableItem => 234,
-            Self::ConditionData_CheckExistGimmickPoint(_) => 235,
-            Self::ConditionData_CheckGimmickOnTime => 236,
-            Self::ConditionData_CheckLoginStep_OrTag237 => 237,
-            Self::ConditionData_CheckUseGimmickOnTime => 238,
-            Self::ConditionData_GetCombinationRootVariable(_) => 239,
-            Self::ConditionData_IsMagnetEnabled => 240,
-            Self::ConditionData_CanDisassemble => 241,
-            Self::ConditionData_CheckOriginalGimmickLength(_) => 242,
-            Self::ConditionData_CheckGimmickPhysicsVolumeLength(_) => 243,
-            Self::ConditionData_CheckInStealthStage => 244,
-            Self::ConditionData_IsInstantlyDeadable => 245,
-            Self::ConditionData_IsCrimeTarget => 246,
-            Self::ConditionData_CheckLookAtSunDirection => 247,
-            Self::ConditionData_CheckHirable => 248,
-            Self::ConditionData_CheckBuffTag(_) => 249,
-            Self::ConditionData_CheckRidingVehicleType(_) => 250,
-            Self::ConditionData_CheckRidingVehicleKey(_) => 251,
-            Self::ConditionData_CheckRidingVehicleKeyList(_) => 252,
-            Self::ConditionData_CheckThreatReward(_) => 253,
-            Self::ConditionData_IsCrossHairTarget => 254,
-            Self::ConditionData_IsAiJumpClimbTarget => 255,
-            Self::ConditionData_Macro(_) => 256,
-            Self::ConditionData_GetAngularVelocity(_) => 257,
-            Self::ConditionData_IsChildGimmick => 258,
-            Self::ConditionData_CheckPlayerCameraLookAtAngle(_) => 259,
-            Self::ConditionData_CheckPlayerCameraFocusActorCovered => 260,
-            Self::ConditionData_CheckDamageElementalType(_) => 261,
-            Self::ConditionData_IsRidingVehicle => 262,
-            Self::ConditionData_CharacterTier(_) => 263,
-            Self::ConditionData_CheckEquipTargetItemActor => 264,
-            Self::ConditionData_GetFactionNodeState(_) => 265,
-            Self::ConditionData_GetCurrentFactionNodeState(_) => 266,
-            Self::ConditionData_IsFactionNodeKnockDown(_) => 267,
-            Self::ConditionData_GetFactionNodeBlockSubType(_) => 268,
-            Self::ConditionData_GetFactionResource(_) => 269,
-            Self::ConditionData_IsFactionNodeMissionGaugeEnable(_) => 270,
-            Self::ConditionData_CheckCharacterGroupKey(_) => 271,
-            Self::ConditionData_GameEventParam(_) => 272,
-            Self::ConditionData_CheckFactionRelation(_) => 273,
-            Self::ConditionData_CheckUsableStore => 274,
-            Self::ConditionData_CheckRide(_) => 275,
-            Self::ConditionData_DockingToCurrentVehicle => 276,
-            Self::ConditionData_CheckImpulseDirection(_) => 277,
-            Self::ConditionData_GetGimmickRotationFromSpawn(_) => 278,
-            Self::ConditionData_SkillTreeNodeLearnable(_) => 279,
-            Self::ConditionData_CheckFactionKey(_) => 280,
-            Self::ConditionData_CheckFactionCategory => 281,
-            Self::ConditionData_CheckConquerorFaction(_) => 282,
-            Self::ConditionData_CheckPositionOwnerFaction(_) => 283,
-            Self::ConditionData_CheckCharacterItemSocket(_) => 284,
-            Self::ConditionData_CheckGimmickItemSocket => 285,
-            Self::ConditionData_CheckCurrentEquipType_OrTag286 => 286,
-            Self::ConditionData_IsInSpecialModeStage(_) => 287,
-            Self::ConditionData_IsSpawnedOnPlatform => 288,
-            Self::ConditionData_GetInventoryWeightLevel(_) => 289,
-            Self::ConditionData_CheckReserveSlot(_) => 290,
-            Self::ConditionData_CheckCanSupplyToRoyal(_) => 291,
-            Self::ConditionData_CheckRoyalSupplyOpen(_) => 292,
-            Self::ConditionData_CheckDockingWeaponOut => 293,
-            Self::ConditionData_GetEquipGimmickItemUsableCount(_) => 294,
-            Self::ConditionData_CurrentStateEquipItemUseSuccess => 295,
-            Self::ConditionData_IsEquipGimmickItemBroken => 296,
-            Self::ConditionData_CheckGimmickTargetHackable(_) => 297,
-            Self::ConditionData_IsHackable(_) => 298,
-            Self::ConditionData_CheckDockingParentDead => 299,
-            Self::ConditionData_CheckAttackName(_) => 300,
-            Self::ConditionData_CheckAttackFromType(_) => 301,
-            Self::ConditionData_CheckGimmickAngleToTarget(_) => 302,
-            Self::ConditionData_CheckSpawnPositionRegion(_) => 303,
-            Self::ConditionData_IsGamePlayLevelGimmick(_) => 304,
-            Self::ConditionData_CheckCompleteStageGimmick => 305,
-            Self::ConditionData_CheckCompleteLevelGimmick(_) => 306,
-            Self::ConditionData_IsRootGimmickLocked => 307,
-            Self::ConditionData_CheckShareValue(_) => 308,
-            Self::ConditionData_CheckLoginStep_OrTag309 => 309,
-            Self::ConditionData_CheckGimmickknowledgeLearned => 310,
-            Self::ConditionData_IsEquipDockingGimmick => 311,
-            Self::ConditionData_CheckPipeGimmickHaveExit => 312,
-            Self::ConditionData_IsLevelGimmickControlByMission => 313,
-            Self::ConditionData_IsLevelGimmickMissionComplete => 314,
-            Self::ConditionData_GetCurrentSubLevel(_) => 315,
-            Self::ConditionData_IsHyosiMercenary => 316,
-            Self::ConditionData_CheckLoginStep_OrTag317 => 317,
-            Self::ConditionData_CheckLoginStep_OrTag318 => 318,
-            Self::ConditionData_DockingChildTagCount(_) => 319,
-            Self::ConditionData_HasBagDocking => 320,
-            Self::ConditionData_IsSpecialModeStartComplete => 321,
-            Self::ConditionData_IsInteractable(_) => 322,
-            Self::ConditionData_CheckVehicleType(_) => 323,
-            Self::ConditionData_IsVehicleLinked => 324,
-            Self::ConditionData_IsSpawnByLinkedVehicle => 325,
-            Self::ConditionData_LostActor(_) => 326,
-            Self::ConditionData_LostGimmick(_) => 327,
-            Self::ConditionData_InteractableSpeaker => 328,
-            Self::ConditionData_CheckMiseensceneScheduleIndex => 329,
-            Self::ConditionData_CheckFlip => 330,
-            Self::ConditionData_GetMinigameSeed(_) => 331,
-            Self::ConditionData_CheckMainMercenaryDead => 332,
-            Self::ConditionData_HasAttachableGimmick => 333,
-            Self::ConditionData_IsDockingGimmickTerrainRegionSummonable(_) => 334,
-            Self::ConditionData_IsGimmickHousingMode => 335,
-            Self::ConditionData_IsInHousingRegion => 336,
-            Self::ConditionData_IsGimmickPlacedByHousing => 337,
-            Self::ConditionData_CheckDropSetDropable(_) => 338,
-            Self::ConditionData_GetFactionResearchProgress(_) => 339,
-            Self::ConditionData_HasLinkedDecoGimmick => 340,
-            Self::ConditionData_IsClientOnlyActor => 341,
-            Self::ConditionData_HasQuestDialog(_) => 342,
-            Self::ConditionData_CheckQuestDialogCategory(_) => 343,
-            Self::ConditionData_IsSpeakingQuestDialog => 344,
-            Self::ConditionData_CheckTarget(_) => 345,
-            Self::ConditionData_CheckHaveLoadingTargetStage_OrTag346 => 346,
-            Self::ConditionData_GetFertilizerAmountPercent(_) => 347,
-            Self::ConditionData_IsDetectModeShowEnemy => 348,
-            Self::ConditionData_CheckHireMercenary => 349,
-            Self::ConditionData_IsExistSoldItemToStore => 350,
-            Self::ConditionData_CheckCurrentEquipType_OrTag351(_) => 351,
-            Self::ConditionData_GetCampDonatedItemCount(_) => 352,
-            Self::ConditionData_IsGimmick => 353,
-            Self::ConditionData_IsCharacter(_) => 354,
-            Self::ConditionData_IsItem => 355,
-            Self::ConditionData_IsTargetOfOperatorDockingGimmick(_) => 356,
-            Self::ConditionData_CheckMercenaryOccupationState => 357,
-            Self::ConditionData_CheckMercenaryType(_) => 358,
-            Self::ConditionData_IsPassableState => 359,
-            Self::ConditionData_CheckTargetDropListToPushInventory(_) => 360,
-            Self::ConditionData_IsMiniGameBanned => 361,
-            Self::ConditionData_IsInGrassField => 362,
-            Self::ConditionData_IsCoveredBySnow => 363,
-            Self::ConditionData_IsInRegionTag(_) => 364,
-            Self::ConditionData_IsGround => 365,
-            Self::ConditionData_CheckCatchTarget => 366,
-            Self::ConditionData_IsFarmAnimal => 367,
-            Self::ConditionData_CheckCanTimeWrap => 368,
-            Self::ConditionData_IsInGlobalGameEventArea(_) => 369,
-            Self::ConditionData_CheckOwnershipState(_) => 370,
-            Self::ConditionData_IsDokcingParentHiredMercenary => 371,
-            Self::ConditionData_CheckCurrentGlobalGameEvent(_) => 372,
-            Self::ConditionData_CheckGamePlayVariable(_) => 373,
-            Self::ConditionData_IsSpawnOwner(_) => 374,
-            Self::ConditionData_IsLiftable => 375,
-            Self::ConditionData_IsOwnerPlayer => 376,
-            Self::ConditionData_IsAbleToFeed => 377,
-            Self::ConditionData_GetInventorySlotFillPercent(_) => 378,
-            Self::ConditionData_CheckMiniGameEntranceFee => 379,
-            Self::ConditionData_CheckUnknownMeditationKnowledge => 380,
-            Self::ConditionData_MiniGameWin(_) => 381,
-            Self::ConditionData_MiniGameRound(_) => 382,
-            Self::ConditionData_MiniGameWinningStreak(_) => 383,
-            Self::ConditionData_IsVehicleAllowedInEnteredRegion => 384,
-            Self::ConditionData_CheckBlockedAbility => 385,
-            Self::ConditionData_CheckMainMercenaryBlockedAbility(_) => 386,
-            Self::ConditionData_BlockByExclusiveStage => 387,
-            Self::ConditionData_CheckNotPlayableState => 388,
-            Self::ConditionData_GetNodeCombatPower(_) => 389,
-            Self::ConditionData_ReserveSlotItemCount(_) => 390,
-            Self::ConditionData_PuzzleSavePresetApplied => 391,
-            Self::ConditionData_IsStableForInteraction => 392,
-            Self::ConditionData_CheckAccompanyType(_) => 393,
-            Self::ConditionData_CheckFactionWantedLevel(_) => 394,
-            Self::ConditionData_CheckVehicleAllowableHeight => 395,
-            Self::ConditionData_CheckMercenaryCallCooltime(_) => 396,
-            Self::ConditionData_IsMiniGamePlayable => 397,
-            Self::ConditionData_IsAimingHitLimitAttackRegion => 398,
-            Self::ConditionData_CheckInventoryMaxSlotCount(_) => 399,
-            Self::ConditionData_CheckInteractingWithOwnedObject => 400,
-            Self::ConditionData_GetDifficultyOption(_) => 401,
-            Self::ConditionData_GetMaxWantedLevel(_) => 402,
-            Self::ConditionData_CheckPlayerHouse(_) => 403,
-            Self::ConditionData_CheckActivatedHousingRegion(_) => 404,
+            Self::ConditionData_IsInRegion(_) => 128,
+            Self::ConditionData_IsInTown => 129,
+            Self::ConditionData_IsAboveRoad(_) => 130,
+            Self::ConditionData_IsInRegionType => 131,
+            Self::ConditionData_IsInSafeZone => 132,
+            Self::ConditionData_CheckTargetable(_) => 133,
+            Self::ConditionData_CheckRetreat => 134,
+            Self::ConditionData_CheckContactableState => 135,
+            Self::ConditionData_CheckTargetToPushInventory(_) => 136,
+            Self::ConditionData_CheckInventorySlotFreeCount(_) => 137,
+            Self::ConditionData_CheckCharacterHeightType => 138,
+            Self::ConditionData_CheckUnlockDoorCharacter => 139,
+            Self::ConditionData_CheckOwnerMercenary => 140,
+            Self::ConditionData_CheckIsFocusActorOwnerMercenary => 141,
+            Self::ConditionData_CheckGimmickEventParamString(_) => 142,
+            Self::ConditionData_CheckGimmickEventParamFloat(_) => 143,
+            Self::ConditionData_CheckGimmickEventParamInt(_) => 144,
+            Self::ConditionData_CheckGimmickEventParamAngle(_) => 145,
+            Self::ConditionData_CheckCCType(_) => 146,
+            Self::ConditionData_CheckField(_) => 147,
+            Self::ConditionData_IsTarget(_) => 148,
+            Self::ConditionData_GetFriendly(_) => 149,
+            Self::ConditionData_CheckFriendlyLevel(_) => 150,
+            Self::ConditionData_GetFactionfriendly(_) => 151,
+            Self::ConditionData_IsFriendlyItem => 152,
+            Self::ConditionData_IsVaryableFriendly => 153,
+            Self::ConditionData_IsPetLooting => 154,
+            Self::ConditionData_CheckWaterVoxel => 155,
+            Self::ConditionData_CheckEquipItemGroup(_) => 156,
+            Self::ConditionData_CheckLoadingStep(_) => 157,
+            Self::ConditionData_CheckGimmickEventSenderName(_) => 158,
+            Self::ConditionData_CheckGetItem(_) => 159,
+            Self::ConditionData_CheckSealActor(_) => 160,
+            Self::ConditionData_CheckWildVehicle => 161,
+            Self::ConditionData_CheckWild => 162,
+            Self::ConditionData_CheckAIReadyToNextTimeline => 163,
+            Self::ConditionData_AITaskSetComplete => 164,
+            Self::ConditionData_CheckAttachedGimmickCount(_) => 165,
+            Self::ConditionData_CheckRemoteCatchTarget(_) => 166,
+            Self::ConditionData_CheckRemoteCatchTargetItemKey(_) => 167,
+            Self::ConditionData_CheckRemoteCatchable => 168,
+            Self::ConditionData_CheckGimmickEvent(_) => 169,
+            Self::ConditionData_IsThrowing => 170,
+            Self::ConditionData_CheckLoadedArrow => 171,
+            Self::ConditionData_CheckRemoteCatched => 172,
+            Self::ConditionData_CheckCatched => 173,
+            Self::ConditionData_CheckStageChartDialogEnd(_) => 174,
+            Self::ConditionData_CheckRider(_) => 175,
+            Self::ConditionData_CheckGimmickTarget(_) => 176,
+            Self::ConditionData_GetGimmickVariable(_) => 177,
+            Self::ConditionData_GetRandomPercentBySpawnPositionSeed(_) => 178,
+            Self::ConditionData_CheckStoreType(_) => 179,
+            Self::ConditionData_IsExistStoreItemToSell => 180,
+            Self::ConditionData_CheckNpcFunctionType(_) => 181,
+            Self::ConditionData_CheckExistPrice => 182,
+            Self::ConditionData_SubTimelineName(_) => 183,
+            Self::ConditionData_ExistTimeline(_) => 184,
+            Self::ConditionData_ExistFolder(_) => 185,
+            Self::ConditionData_ExistSequencerCamera => 186,
+            Self::ConditionData_IsCutJump => 187,
+            Self::ConditionData_CheckReserveItemSlotOut(_) => 188,
+            Self::ConditionData_CheckGateOpenable => 189,
+            Self::ConditionData_CheckGimmickItemKey(_) => 190,
+            Self::ConditionData_CheckTargetGimmickUnlockable => 191,
+            Self::ConditionData_CheckUnlockableByMission => 192,
+            Self::ConditionData_CheckMainMercenarySummoned(_) => 193,
+            Self::ConditionData_CheckMainMercenaryNearToLeader(_) => 194,
+            Self::ConditionData_CheckMainMercenaryHaveItemGroupPrice(_) => 195,
+            Self::ConditionData_CheckHaveMercenary(_) => 196,
+            Self::ConditionData_CheckHaveVehicle(_) => 197,
+            Self::ConditionData_CheckGimmickImpulseWhereType(_) => 198,
+            Self::ConditionData_CheckElementalMaterialStateSuccess(_) => 199,
+            Self::ConditionData_CheckCurrentEquipType_OrTag199 => 200,
+            Self::ConditionData_CheckBurnable => 201,
+            Self::ConditionData_CheckBreakable => 202,
+            Self::ConditionData_CheckOriginalBreakable => 203,
+            Self::ConditionData_CheckBreaked => 204,
+            Self::ConditionData_IsDockingChild => 205,
+            Self::ConditionData_CheckTriggerVolumeGroupIndex(_) => 206,
+            Self::ConditionData_Weather(_) => 207,
+            Self::ConditionData_CheckGimmickParentLinkCount(_) => 208,
+            Self::ConditionData_CheckGimmickRemoteCatchType => 209,
+            Self::ConditionData_CheckGimmickTriggerCount(_) => 210,
+            Self::ConditionData_IsFullGimmickAttachment => 211,
+            Self::ConditionData_CheckGimmickAttachmentType => 212,
+            Self::ConditionData_CheckGimmickTargetCount(_) => 213,
+            Self::ConditionData_CheckGimmickNonBreakTargetCount(_) => 214,
+            Self::ConditionData_CheckExistStealItem(_) => 215,
+            Self::ConditionData_CheckElementalMaterialType => 216,
+            Self::ConditionData_IsGimmickSealComplete => 217,
+            Self::ConditionData_IsAcquiredItem => 218,
+            Self::ConditionData_IsFullGimmickTriggerEnteredTarget(_) => 219,
+            Self::ConditionData_CheckGimmickLinkSignalOn => 220,
+            Self::ConditionData_CheckGimmickLookAtComplete => 221,
+            Self::ConditionData_CheckAttackImpulseLevel(_) => 222,
+            Self::ConditionData_CheckBreakableAttackImpulseLevel => 223,
+            Self::ConditionData_CheckSpawnReason(_) => 224,
+            Self::ConditionData_CheckFriendlyItemReward => 225,
+            Self::ConditionData_CheckNearestTriggerTargetDistance(_) => 226,
+            Self::ConditionData_CheckHasMagneticPartner => 227,
+            Self::ConditionData_CheckForceFieldType => 228,
+            Self::ConditionData_CheckForceFieldTargetType => 229,
+            Self::ConditionData_CheckExistDropItem => 230,
+            Self::ConditionData_CheckGlobalStageSequencerExit(_) => 231,
+            Self::ConditionData_CheckSealable(_) => 232,
+            Self::ConditionData_CheckTargetSealable => 233,
+            Self::ConditionData_CheckSealState => 234,
+            Self::ConditionData_HasSealDropableItem => 235,
+            Self::ConditionData_CheckExistGimmickPoint(_) => 236,
+            Self::ConditionData_CheckGimmickOnTime => 237,
+            Self::ConditionData_CheckLoginStep_OrTag237 => 238,
+            Self::ConditionData_CheckUseGimmickOnTime => 239,
+            Self::ConditionData_GetCombinationRootVariable(_) => 240,
+            Self::ConditionData_IsMagnetEnabled => 241,
+            Self::ConditionData_CanDisassemble => 242,
+            Self::ConditionData_CheckOriginalGimmickLength(_) => 243,
+            Self::ConditionData_CheckGimmickPhysicsVolumeLength(_) => 244,
+            Self::ConditionData_CheckInStealthStage => 245,
+            Self::ConditionData_IsInstantlyDeadable => 246,
+            Self::ConditionData_IsCrimeTarget => 247,
+            Self::ConditionData_CheckLookAtSunDirection => 248,
+            Self::ConditionData_CheckHirable => 249,
+            Self::ConditionData_CheckBuffTag(_) => 250,
+            Self::ConditionData_CheckRidingVehicleType(_) => 251,
+            Self::ConditionData_CheckRidingVehicleKey(_) => 252,
+            Self::ConditionData_CheckRidingVehicleKeyList(_) => 253,
+            Self::ConditionData_CheckThreatReward(_) => 254,
+            Self::ConditionData_IsCrossHairTarget => 255,
+            Self::ConditionData_IsAiJumpClimbTarget => 256,
+            Self::ConditionData_Macro(_) => 257,
+            Self::ConditionData_GetAngularVelocity(_) => 258,
+            Self::ConditionData_IsChildGimmick => 259,
+            Self::ConditionData_CheckPlayerCameraLookAtAngle(_) => 260,
+            Self::ConditionData_CheckPlayerCameraFocusActorCovered => 261,
+            Self::ConditionData_CheckDamageElementalType(_) => 262,
+            Self::ConditionData_IsRidingVehicle => 263,
+            Self::ConditionData_CharacterTier(_) => 264,
+            Self::ConditionData_CheckEquipTargetItemActor => 265,
+            Self::ConditionData_GetFactionNodeState(_) => 266,
+            Self::ConditionData_GetCurrentFactionNodeState(_) => 267,
+            Self::ConditionData_IsFactionNodeKnockDown(_) => 268,
+            Self::ConditionData_GetFactionNodeBlockSubType(_) => 269,
+            Self::ConditionData_GetFactionResource(_) => 270,
+            Self::ConditionData_IsFactionNodeMissionGaugeEnable(_) => 271,
+            Self::ConditionData_CheckCharacterGroupKey(_) => 272,
+            Self::ConditionData_GameEventParam(_) => 273,
+            Self::ConditionData_CheckFactionRelation(_) => 274,
+            Self::ConditionData_CheckUsableStore => 275,
+            Self::ConditionData_CheckRide(_) => 276,
+            Self::ConditionData_DockingToCurrentVehicle => 277,
+            Self::ConditionData_CheckImpulseDirection(_) => 278,
+            Self::ConditionData_GetGimmickRotationFromSpawn(_) => 279,
+            Self::ConditionData_SkillTreeNodeLearnable(_) => 280,
+            Self::ConditionData_CheckFactionKey(_) => 281,
+            Self::ConditionData_CheckFactionCategory => 282,
+            Self::ConditionData_CheckConquerorFaction(_) => 283,
+            Self::ConditionData_CheckPositionOwnerFaction(_) => 284,
+            Self::ConditionData_CheckCharacterItemSocket(_) => 285,
+            Self::ConditionData_CheckGimmickItemSocket => 286,
+            Self::ConditionData_CheckCurrentEquipType_OrTag286(_) => 287,
+            Self::ConditionData_IsInSpecialModeStage(_) => 288,
+            Self::ConditionData_IsSpawnedOnPlatform => 289,
+            Self::ConditionData_GetInventoryWeightLevel(_) => 290,
+            Self::ConditionData_CheckReserveSlot(_) => 291,
+            Self::ConditionData_CheckCanSupplyToRoyal(_) => 292,
+            Self::ConditionData_CheckRoyalSupplyOpen(_) => 293,
+            Self::ConditionData_CheckDockingWeaponOut => 294,
+            Self::ConditionData_GetEquipGimmickItemUsableCount(_) => 295,
+            Self::ConditionData_CurrentStateEquipItemUseSuccess => 296,
+            Self::ConditionData_IsEquipGimmickItemBroken => 297,
+            Self::ConditionData_CheckGimmickTargetHackable(_) => 298,
+            Self::ConditionData_IsHackable(_) => 299,
+            Self::ConditionData_CheckDockingParentDead => 300,
+            Self::ConditionData_CheckAttackName(_) => 301,
+            Self::ConditionData_CheckAttackFromType(_) => 302,
+            Self::ConditionData_CheckGimmickAngleToTarget(_) => 303,
+            Self::ConditionData_CheckSpawnPositionRegion(_) => 304,
+            Self::ConditionData_IsGamePlayLevelGimmick(_) => 305,
+            Self::ConditionData_CheckCompleteStageGimmick => 306,
+            Self::ConditionData_CheckCompleteLevelGimmick(_) => 307,
+            Self::ConditionData_IsRootGimmickLocked => 308,
+            Self::ConditionData_CheckShareValue(_) => 309,
+            Self::ConditionData_CheckLoginStep_OrTag309 => 310,
+            Self::ConditionData_CheckGimmickknowledgeLearned => 311,
+            Self::ConditionData_IsEquipDockingGimmick => 312,
+            Self::ConditionData_CheckPipeGimmickHaveExit => 313,
+            Self::ConditionData_IsLevelGimmickControlByMission => 314,
+            Self::ConditionData_IsLevelGimmickMissionComplete => 315,
+            Self::ConditionData_GetCurrentSubLevel(_) => 316,
+            Self::ConditionData_IsHyosiMercenary => 317,
+            Self::ConditionData_CheckLoginStep_OrTag317 => 318,
+            Self::ConditionData_CheckLoginStep_OrTag318 => 319,
+            Self::ConditionData_DockingChildTagCount(_) => 320,
+            Self::ConditionData_HasBagDocking => 321,
+            Self::ConditionData_IsSpecialModeStartComplete => 322,
+            Self::ConditionData_IsInteractable(_) => 323,
+            Self::ConditionData_CheckVehicleType(_) => 324,
+            Self::ConditionData_IsVehicleLinked => 325,
+            Self::ConditionData_IsSpawnByLinkedVehicle => 326,
+            Self::ConditionData_LostActor(_) => 327,
+            Self::ConditionData_LostGimmick(_) => 328,
+            Self::ConditionData_InteractableSpeaker => 329,
+            Self::ConditionData_CheckMiseensceneScheduleIndex => 330,
+            Self::ConditionData_CheckFlip => 331,
+            Self::ConditionData_GetMinigameSeed(_) => 332,
+            Self::ConditionData_CheckMainMercenaryDead => 333,
+            Self::ConditionData_HasAttachableGimmick => 334,
+            Self::ConditionData_IsDockingGimmickTerrainRegionSummonable(_) => 335,
+            Self::ConditionData_IsGimmickHousingMode => 336,
+            Self::ConditionData_IsInHousingRegion => 337,
+            Self::ConditionData_IsGimmickPlacedByHousing => 338,
+            Self::ConditionData_CheckDropSetDropable(_) => 339,
+            Self::ConditionData_GetFactionResearchProgress(_) => 340,
+            Self::ConditionData_HasLinkedDecoGimmick => 341,
+            Self::ConditionData_IsClientOnlyActor => 342,
+            Self::ConditionData_HasQuestDialog(_) => 343,
+            Self::ConditionData_CheckQuestDialogCategory(_) => 344,
+            Self::ConditionData_IsSpeakingQuestDialog => 345,
+            Self::ConditionData_CheckTarget(_) => 346,
+            Self::ConditionData_CheckHaveLoadingTargetStage_OrTag346 => 347,
+            Self::ConditionData_GetFertilizerAmountPercent(_) => 348,
+            Self::ConditionData_IsDetectModeShowEnemy => 349,
+            Self::ConditionData_CheckHireMercenary => 350,
+            Self::ConditionData_IsExistSoldItemToStore => 351,
+            Self::ConditionData_CheckCurrentEquipType_OrTag351(_) => 352,
+            Self::ConditionData_GetCampDonatedItemCount(_) => 353,
+            Self::ConditionData_IsGimmick => 354,
+            Self::ConditionData_IsCharacter(_) => 355,
+            Self::ConditionData_IsItem => 356,
+            Self::ConditionData_IsTargetOfOperatorDockingGimmick(_) => 357,
+            Self::ConditionData_CheckMercenaryOccupationState => 358,
+            Self::ConditionData_CheckMercenaryType(_) => 359,
+            Self::ConditionData_IsPassableState => 360,
+            Self::ConditionData_CheckTargetDropListToPushInventory(_) => 361,
+            Self::ConditionData_IsMiniGameBanned => 362,
+            Self::ConditionData_IsInGrassField => 363,
+            Self::ConditionData_IsCoveredBySnow => 364,
+            Self::ConditionData_IsInRegionTag(_) => 365,
+            Self::ConditionData_IsGround => 366,
+            Self::ConditionData_CheckCatchTarget => 367,
+            Self::ConditionData_IsFarmAnimal => 368,
+            Self::ConditionData_CheckCanTimeWrap => 369,
+            Self::ConditionData_IsInGlobalGameEventArea(_) => 370,
+            Self::ConditionData_CheckOwnershipState(_) => 371,
+            Self::ConditionData_IsDokcingParentHiredMercenary => 372,
+            Self::ConditionData_CheckCurrentGlobalGameEvent(_) => 373,
+            Self::ConditionData_CheckGamePlayVariable(_) => 374,
+            Self::ConditionData_IsSpawnOwner(_) => 375,
+            Self::ConditionData_IsLiftable => 376,
+            Self::ConditionData_IsOwnerPlayer => 377,
+            Self::ConditionData_IsAbleToFeed => 378,
+            Self::ConditionData_GetInventorySlotFillPercent(_) => 379,
+            Self::ConditionData_CheckMiniGameEntranceFee => 380,
+            Self::ConditionData_CheckUnknownMeditationKnowledge => 381,
+            Self::ConditionData_MiniGameWin(_) => 382,
+            Self::ConditionData_MiniGameRound(_) => 383,
+            Self::ConditionData_MiniGameWinningStreak(_) => 384,
+            Self::ConditionData_IsVehicleAllowedInEnteredRegion => 385,
+            Self::ConditionData_CheckBlockedAbility => 386,
+            Self::ConditionData_CheckMainMercenaryBlockedAbility(_) => 387,
+            Self::ConditionData_BlockByExclusiveStage => 388,
+            Self::ConditionData_CheckNotPlayableState => 389,
+            Self::ConditionData_GetNodeCombatPower(_) => 390,
+            Self::ConditionData_ReserveSlotItemCount(_) => 391,
+            Self::ConditionData_PuzzleSavePresetApplied => 392,
+            Self::ConditionData_IsStableForInteraction => 393,
+            Self::ConditionData_CheckAccompanyType(_) => 394,
+            Self::ConditionData_CheckFactionWantedLevel(_) => 395,
+            Self::ConditionData_CheckVehicleAllowableHeight => 396,
+            Self::ConditionData_CheckMercenaryCallCooltime(_) => 397,
+            Self::ConditionData_IsMiniGamePlayable => 398,
+            Self::ConditionData_IsAimingHitLimitAttackRegion => 399,
+            Self::ConditionData_CheckInventoryMaxSlotCount(_) => 400,
+            Self::ConditionData_CheckInteractingWithOwnedObject => 401,
+            Self::ConditionData_GetDifficultyOption(_) => 402,
+            Self::ConditionData_GetMaxWantedLevel(_) => 403,
+            Self::ConditionData_CheckPlayerHouse(_) => 404,
+            Self::ConditionData_CheckActivatedHousingRegion(_) => 405,
         }
     }
 
@@ -2870,7 +2870,7 @@ impl<'a> ConditionDataVariant<'a> {
             Self::ConditionData_CheckPositionOwnerFaction(_) => "ConditionData_CheckPositionOwnerFaction",
             Self::ConditionData_CheckCharacterItemSocket(_) => "ConditionData_CheckCharacterItemSocket",
             Self::ConditionData_CheckGimmickItemSocket => "ConditionData_CheckGimmickItemSocket",
-            Self::ConditionData_CheckCurrentEquipType_OrTag286 => "ConditionData_CheckCurrentEquipType_OrTag286",
+            Self::ConditionData_CheckCurrentEquipType_OrTag286(_) => "ConditionData_CheckCurrentEquipType_OrTag286",
             Self::ConditionData_IsInSpecialModeStage(_) => "ConditionData_IsInSpecialModeStage",
             Self::ConditionData_IsSpawnedOnPlatform => "ConditionData_IsSpawnedOnPlatform",
             Self::ConditionData_GetInventoryWeightLevel(_) => "ConditionData_GetInventoryWeightLevel",
@@ -3284,7 +3284,7 @@ impl<'a> ConditionDataVariant<'a> {
             Self::ConditionData_CheckPositionOwnerFaction(p) => { m.insert("body".into(), Value::Object(p.to_json_dict())); }
             Self::ConditionData_CheckCharacterItemSocket(p) => { m.insert("body".into(), Value::Object(p.to_json_dict())); }
             Self::ConditionData_CheckGimmickItemSocket => {}
-            Self::ConditionData_CheckCurrentEquipType_OrTag286 => {}
+            Self::ConditionData_CheckCurrentEquipType_OrTag286(p) => { m.insert("body".into(), Value::Object(p.to_json_dict())); }
             Self::ConditionData_IsInSpecialModeStage(p) => { m.insert("body".into(), Value::Object(p.to_json_dict())); }
             Self::ConditionData_IsSpawnedOnPlatform => {}
             Self::ConditionData_GetInventoryWeightLevel(p) => { m.insert("body".into(), Value::Object(p.to_json_dict())); }
@@ -3546,284 +3546,284 @@ impl<'a> ConditionDataVariant<'a> {
             124 => {}
             125 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSpecialMode: missing body object"))?; ConditionData_CheckSpecialModePayload::write_from_json_dict(w, body)?; }
             126 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_SpecialModeKey: missing body object"))?; ConditionData_SpecialModeKeyPayload::write_from_json_dict(w, body)?; }
-            127 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInRegion: missing body object"))?; ConditionData_IsInRegionPayload::write_from_json_dict(w, body)?; }
-            128 => {}
-            129 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsAboveRoad: missing body object"))?; ConditionData_IsAboveRoadPayload::write_from_json_dict(w, body)?; }
-            130 => {}
+            128 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInRegion: missing body object"))?; ConditionData_IsInRegionPayload::write_from_json_dict(w, body)?; }
+            129 => {}
+            130 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsAboveRoad: missing body object"))?; ConditionData_IsAboveRoadPayload::write_from_json_dict(w, body)?; }
             131 => {}
-            132 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTargetable: missing body object"))?; ConditionData_CheckTargetablePayload::write_from_json_dict(w, body)?; }
-            133 => {}
+            132 => {}
+            133 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTargetable: missing body object"))?; ConditionData_CheckTargetablePayload::write_from_json_dict(w, body)?; }
             134 => {}
-            135 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTargetToPushInventory: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            136 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckInventorySlotFreeCount: missing body object"))?; ConditionData_CheckInventorySlotFreeCountPayload::write_from_json_dict(w, body)?; }
-            137 => {}
+            135 => {}
+            136 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTargetToPushInventory: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            137 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckInventorySlotFreeCount: missing body object"))?; ConditionData_CheckInventorySlotFreeCountPayload::write_from_json_dict(w, body)?; }
             138 => {}
             139 => {}
             140 => {}
-            141 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamString: missing body object"))?; ConditionData_CheckGimmickEventParamStringPayload::write_from_json_dict(w, body)?; }
-            142 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamFloat: missing body object"))?; ConditionData_CheckGimmickEventParamFloatPayload::write_from_json_dict(w, body)?; }
-            143 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamInt: missing body object"))?; ConditionData_CheckGimmickEventParamIntPayload::write_from_json_dict(w, body)?; }
-            144 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamAngle: missing body object"))?; ConditionData_CheckGimmickEventParamAnglePayload::write_from_json_dict(w, body)?; }
-            145 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCCType: missing body object"))?; ConditionData_CheckCCTypePayload::write_from_json_dict(w, body)?; }
-            146 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckField: missing body object"))?; ConditionData_CheckFieldPayload::write_from_json_dict(w, body)?; }
-            147 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsTarget: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            148 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFriendly: missing body object"))?; ConditionData_GetFriendlyPayload::write_from_json_dict(w, body)?; }
-            149 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFriendlyLevel: missing body object"))?; ConditionData_CheckFriendlyLevelPayload::write_from_json_dict(w, body)?; }
-            150 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionfriendly: missing body object"))?; ConditionData_GetFactionfriendlyPayload::write_from_json_dict(w, body)?; }
-            151 => {}
+            141 => {}
+            142 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamString: missing body object"))?; ConditionData_CheckGimmickEventParamStringPayload::write_from_json_dict(w, body)?; }
+            143 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamFloat: missing body object"))?; ConditionData_CheckGimmickEventParamFloatPayload::write_from_json_dict(w, body)?; }
+            144 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamInt: missing body object"))?; ConditionData_CheckGimmickEventParamIntPayload::write_from_json_dict(w, body)?; }
+            145 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventParamAngle: missing body object"))?; ConditionData_CheckGimmickEventParamAnglePayload::write_from_json_dict(w, body)?; }
+            146 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCCType: missing body object"))?; ConditionData_CheckCCTypePayload::write_from_json_dict(w, body)?; }
+            147 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckField: missing body object"))?; ConditionData_CheckFieldPayload::write_from_json_dict(w, body)?; }
+            148 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsTarget: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            149 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFriendly: missing body object"))?; ConditionData_GetFriendlyPayload::write_from_json_dict(w, body)?; }
+            150 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFriendlyLevel: missing body object"))?; ConditionData_CheckFriendlyLevelPayload::write_from_json_dict(w, body)?; }
+            151 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionfriendly: missing body object"))?; ConditionData_GetFactionfriendlyPayload::write_from_json_dict(w, body)?; }
             152 => {}
             153 => {}
             154 => {}
-            155 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckEquipItemGroup: missing body object"))?; ConditionData_CheckEquipItemGroupPayload::write_from_json_dict(w, body)?; }
-            156 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckLoadingStep: missing body object"))?; ConditionData_CheckLoadingStepPayload::write_from_json_dict(w, body)?; }
-            157 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventSenderName: missing body object"))?; ConditionData_CheckGimmickEventSenderNamePayload::write_from_json_dict(w, body)?; }
-            158 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGetItem: missing body object"))?; ConditionData_CheckGetItemPayload::write_from_json_dict(w, body)?; }
-            159 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSealActor: missing body object"))?; ConditionData_CheckSealActorPayload::write_from_json_dict(w, body)?; }
-            160 => {}
+            155 => {}
+            156 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckEquipItemGroup: missing body object"))?; ConditionData_CheckEquipItemGroupPayload::write_from_json_dict(w, body)?; }
+            157 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckLoadingStep: missing body object"))?; ConditionData_CheckLoadingStepPayload::write_from_json_dict(w, body)?; }
+            158 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEventSenderName: missing body object"))?; ConditionData_CheckGimmickEventSenderNamePayload::write_from_json_dict(w, body)?; }
+            159 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGetItem: missing body object"))?; ConditionData_CheckGetItemPayload::write_from_json_dict(w, body)?; }
+            160 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSealActor: missing body object"))?; ConditionData_CheckSealActorPayload::write_from_json_dict(w, body)?; }
             161 => {}
             162 => {}
             163 => {}
-            164 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttachedGimmickCount: missing body object"))?; ConditionData_CheckAttachedGimmickCountPayload::write_from_json_dict(w, body)?; }
-            165 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRemoteCatchTarget: missing body object"))?; ConditionData_CheckRemoteCatchTargetPayload::write_from_json_dict(w, body)?; }
-            166 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRemoteCatchTargetItemKey: missing body object"))?; ConditionData_CheckRemoteCatchTargetItemKeyPayload::write_from_json_dict(w, body)?; }
-            167 => {}
-            168 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEvent: missing body object"))?; ConditionData_CheckGimmickEventPayload::write_from_json_dict(w, body)?; }
-            169 => {}
+            164 => {}
+            165 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttachedGimmickCount: missing body object"))?; ConditionData_CheckAttachedGimmickCountPayload::write_from_json_dict(w, body)?; }
+            166 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRemoteCatchTarget: missing body object"))?; ConditionData_CheckRemoteCatchTargetPayload::write_from_json_dict(w, body)?; }
+            167 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRemoteCatchTargetItemKey: missing body object"))?; ConditionData_CheckRemoteCatchTargetItemKeyPayload::write_from_json_dict(w, body)?; }
+            168 => {}
+            169 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickEvent: missing body object"))?; ConditionData_CheckGimmickEventPayload::write_from_json_dict(w, body)?; }
             170 => {}
             171 => {}
             172 => {}
-            173 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckStageChartDialogEnd: missing body object"))?; ConditionData_CheckStageChartDialogEndPayload::write_from_json_dict(w, body)?; }
-            174 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRider: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            175 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTarget: missing body object"))?; ConditionData_CheckGimmickTargetPayload::write_from_json_dict(w, body)?; }
-            176 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetGimmickVariable: missing body object"))?; ConditionData_GetGimmickVariablePayload::write_from_json_dict(w, body)?; }
-            177 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetRandomPercentBySpawnPositionSeed: missing body object"))?; ConditionData_GetRandomPercentBySpawnPositionSeedPayload::write_from_json_dict(w, body)?; }
-            178 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckStoreType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            179 => {}
-            180 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckNpcFunctionType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            181 => {}
-            182 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_SubTimelineName: missing body object"))?; ConditionData_SubTimelineNamePayload::write_from_json_dict(w, body)?; }
-            183 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_ExistTimeline: missing body object"))?; ConditionData_ExistTimelinePayload::write_from_json_dict(w, body)?; }
-            184 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_ExistFolder: missing body object"))?; ConditionData_ExistFolderPayload::write_from_json_dict(w, body)?; }
-            185 => {}
+            173 => {}
+            174 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckStageChartDialogEnd: missing body object"))?; ConditionData_CheckStageChartDialogEndPayload::write_from_json_dict(w, body)?; }
+            175 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRider: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            176 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTarget: missing body object"))?; ConditionData_CheckGimmickTargetPayload::write_from_json_dict(w, body)?; }
+            177 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetGimmickVariable: missing body object"))?; ConditionData_GetGimmickVariablePayload::write_from_json_dict(w, body)?; }
+            178 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetRandomPercentBySpawnPositionSeed: missing body object"))?; ConditionData_GetRandomPercentBySpawnPositionSeedPayload::write_from_json_dict(w, body)?; }
+            179 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckStoreType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            180 => {}
+            181 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckNpcFunctionType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            182 => {}
+            183 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_SubTimelineName: missing body object"))?; ConditionData_SubTimelineNamePayload::write_from_json_dict(w, body)?; }
+            184 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_ExistTimeline: missing body object"))?; ConditionData_ExistTimelinePayload::write_from_json_dict(w, body)?; }
+            185 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_ExistFolder: missing body object"))?; ConditionData_ExistFolderPayload::write_from_json_dict(w, body)?; }
             186 => {}
-            187 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckReserveItemSlotOut: missing body object"))?; ConditionData_CheckReserveItemSlotOutPayload::write_from_json_dict(w, body)?; }
-            188 => {}
-            189 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickItemKey: missing body object"))?; ConditionData_CheckGimmickItemKeyPayload::write_from_json_dict(w, body)?; }
-            190 => {}
+            187 => {}
+            188 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckReserveItemSlotOut: missing body object"))?; ConditionData_CheckReserveItemSlotOutPayload::write_from_json_dict(w, body)?; }
+            189 => {}
+            190 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickItemKey: missing body object"))?; ConditionData_CheckGimmickItemKeyPayload::write_from_json_dict(w, body)?; }
             191 => {}
-            192 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenarySummoned: missing body object"))?; ConditionData_CheckMainMercenarySummonedPayload::write_from_json_dict(w, body)?; }
-            193 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenaryNearToLeader: missing body object"))?; ConditionData_CheckMainMercenaryNearToLeaderPayload::write_from_json_dict(w, body)?; }
-            194 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenaryHaveItemGroupPrice: missing body object"))?; ConditionData_CheckMainMercenaryHaveItemGroupPricePayload::write_from_json_dict(w, body)?; }
-            195 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckHaveMercenary: missing body object"))?; ConditionData_CheckHaveMercenaryPayload::write_from_json_dict(w, body)?; }
-            196 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckHaveVehicle: missing body object"))?; ConditionData_CheckHaveVehiclePayload::write_from_json_dict(w, body)?; }
-            197 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickImpulseWhereType: missing body object"))?; ConditionData_CheckGimmickImpulseWhereTypePayload::write_from_json_dict(w, body)?; }
-            198 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckElementalMaterialStateSuccess: missing body object"))?; ConditionData_CheckElementalMaterialStateSuccessPayload::write_from_json_dict(w, body)?; }
-            199 => {}
+            192 => {}
+            193 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenarySummoned: missing body object"))?; ConditionData_CheckMainMercenarySummonedPayload::write_from_json_dict(w, body)?; }
+            194 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenaryNearToLeader: missing body object"))?; ConditionData_CheckMainMercenaryNearToLeaderPayload::write_from_json_dict(w, body)?; }
+            195 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenaryHaveItemGroupPrice: missing body object"))?; ConditionData_CheckMainMercenaryHaveItemGroupPricePayload::write_from_json_dict(w, body)?; }
+            196 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckHaveMercenary: missing body object"))?; ConditionData_CheckHaveMercenaryPayload::write_from_json_dict(w, body)?; }
+            197 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckHaveVehicle: missing body object"))?; ConditionData_CheckHaveVehiclePayload::write_from_json_dict(w, body)?; }
+            198 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickImpulseWhereType: missing body object"))?; ConditionData_CheckGimmickImpulseWhereTypePayload::write_from_json_dict(w, body)?; }
+            199 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckElementalMaterialStateSuccess: missing body object"))?; ConditionData_CheckElementalMaterialStateSuccessPayload::write_from_json_dict(w, body)?; }
             200 => {}
             201 => {}
             202 => {}
             203 => {}
             204 => {}
-            205 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTriggerVolumeGroupIndex: missing body object"))?; ConditionData_CheckTriggerVolumeGroupIndexPayload::write_from_json_dict(w, body)?; }
-            206 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_Weather: missing body object"))?; ConditionData_WeatherPayload::write_from_json_dict(w, body)?; }
-            207 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickParentLinkCount: missing body object"))?; ConditionData_CheckGimmickParentLinkCountPayload::write_from_json_dict(w, body)?; }
-            208 => {}
-            209 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTriggerCount: missing body object"))?; ConditionData_CheckGimmickTriggerCountPayload::write_from_json_dict(w, body)?; }
-            210 => {}
+            205 => {}
+            206 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTriggerVolumeGroupIndex: missing body object"))?; ConditionData_CheckTriggerVolumeGroupIndexPayload::write_from_json_dict(w, body)?; }
+            207 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_Weather: missing body object"))?; ConditionData_WeatherPayload::write_from_json_dict(w, body)?; }
+            208 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickParentLinkCount: missing body object"))?; ConditionData_CheckGimmickParentLinkCountPayload::write_from_json_dict(w, body)?; }
+            209 => {}
+            210 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTriggerCount: missing body object"))?; ConditionData_CheckGimmickTriggerCountPayload::write_from_json_dict(w, body)?; }
             211 => {}
-            212 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTargetCount: missing body object"))?; ConditionData_CheckGimmickTargetCountPayload::write_from_json_dict(w, body)?; }
-            213 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickNonBreakTargetCount: missing body object"))?; ConditionData_CheckGimmickNonBreakTargetCountPayload::write_from_json_dict(w, body)?; }
-            214 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckExistStealItem: missing body object"))?; ConditionData_CheckExistStealItemPayload::write_from_json_dict(w, body)?; }
-            215 => {}
+            212 => {}
+            213 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTargetCount: missing body object"))?; ConditionData_CheckGimmickTargetCountPayload::write_from_json_dict(w, body)?; }
+            214 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickNonBreakTargetCount: missing body object"))?; ConditionData_CheckGimmickNonBreakTargetCountPayload::write_from_json_dict(w, body)?; }
+            215 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckExistStealItem: missing body object"))?; ConditionData_CheckExistStealItemPayload::write_from_json_dict(w, body)?; }
             216 => {}
             217 => {}
-            218 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsFullGimmickTriggerEnteredTarget: missing body object"))?; ConditionData_IsFullGimmickTriggerEnteredTargetPayload::write_from_json_dict(w, body)?; }
-            219 => {}
+            218 => {}
+            219 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsFullGimmickTriggerEnteredTarget: missing body object"))?; ConditionData_IsFullGimmickTriggerEnteredTargetPayload::write_from_json_dict(w, body)?; }
             220 => {}
-            221 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttackImpulseLevel: missing body object"))?; ConditionData_CheckAttackImpulseLevelPayload::write_from_json_dict(w, body)?; }
-            222 => {}
-            223 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSpawnReason: missing body object"))?; ConditionData_CheckSpawnReasonPayload::write_from_json_dict(w, body)?; }
-            224 => {}
-            225 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckNearestTriggerTargetDistance: missing body object"))?; ConditionData_CheckNearestTriggerTargetDistancePayload::write_from_json_dict(w, body)?; }
-            226 => {}
+            221 => {}
+            222 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttackImpulseLevel: missing body object"))?; ConditionData_CheckAttackImpulseLevelPayload::write_from_json_dict(w, body)?; }
+            223 => {}
+            224 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSpawnReason: missing body object"))?; ConditionData_CheckSpawnReasonPayload::write_from_json_dict(w, body)?; }
+            225 => {}
+            226 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckNearestTriggerTargetDistance: missing body object"))?; ConditionData_CheckNearestTriggerTargetDistancePayload::write_from_json_dict(w, body)?; }
             227 => {}
             228 => {}
             229 => {}
-            230 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGlobalStageSequencerExit: missing body object"))?; ConditionData_CheckGlobalStageSequencerExitPayload::write_from_json_dict(w, body)?; }
-            231 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSealable: missing body object"))?; ConditionData_CheckSealablePayload::write_from_json_dict(w, body)?; }
-            232 => {}
+            230 => {}
+            231 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGlobalStageSequencerExit: missing body object"))?; ConditionData_CheckGlobalStageSequencerExitPayload::write_from_json_dict(w, body)?; }
+            232 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSealable: missing body object"))?; ConditionData_CheckSealablePayload::write_from_json_dict(w, body)?; }
             233 => {}
             234 => {}
-            235 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckExistGimmickPoint: missing body object"))?; ConditionData_CheckExistGimmickPointPayload::write_from_json_dict(w, body)?; }
-            236 => {}
+            235 => {}
+            236 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckExistGimmickPoint: missing body object"))?; ConditionData_CheckExistGimmickPointPayload::write_from_json_dict(w, body)?; }
             237 => {}
             238 => {}
-            239 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCombinationRootVariable: missing body object"))?; ConditionData_GetCombinationRootVariablePayload::write_from_json_dict(w, body)?; }
-            240 => {}
+            239 => {}
+            240 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCombinationRootVariable: missing body object"))?; ConditionData_GetCombinationRootVariablePayload::write_from_json_dict(w, body)?; }
             241 => {}
-            242 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckOriginalGimmickLength: missing body object"))?; ConditionData_CheckOriginalGimmickLengthPayload::write_from_json_dict(w, body)?; }
-            243 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickPhysicsVolumeLength: missing body object"))?; ConditionData_CheckGimmickPhysicsVolumeLengthPayload::write_from_json_dict(w, body)?; }
-            244 => {}
+            242 => {}
+            243 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckOriginalGimmickLength: missing body object"))?; ConditionData_CheckOriginalGimmickLengthPayload::write_from_json_dict(w, body)?; }
+            244 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickPhysicsVolumeLength: missing body object"))?; ConditionData_CheckGimmickPhysicsVolumeLengthPayload::write_from_json_dict(w, body)?; }
             245 => {}
             246 => {}
             247 => {}
             248 => {}
-            249 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckBuffTag: missing body object"))?; ConditionData_CheckBuffTagPayload::write_from_json_dict(w, body)?; }
-            250 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRidingVehicleType: missing body object"))?; ConditionData_CheckRidingVehicleTypePayload::write_from_json_dict(w, body)?; }
-            251 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRidingVehicleKey: missing body object"))?; ConditionData_CheckRidingVehicleKeyPayload::write_from_json_dict(w, body)?; }
-            252 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRidingVehicleKeyList: missing body object"))?; ConditionData_CheckRidingVehicleKeyListPayload::write_from_json_dict(w, body)?; }
-            253 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckThreatReward: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            254 => {}
+            249 => {}
+            250 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckBuffTag: missing body object"))?; ConditionData_CheckBuffTagPayload::write_from_json_dict(w, body)?; }
+            251 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRidingVehicleType: missing body object"))?; ConditionData_CheckRidingVehicleTypePayload::write_from_json_dict(w, body)?; }
+            252 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRidingVehicleKey: missing body object"))?; ConditionData_CheckRidingVehicleKeyPayload::write_from_json_dict(w, body)?; }
+            253 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRidingVehicleKeyList: missing body object"))?; ConditionData_CheckRidingVehicleKeyListPayload::write_from_json_dict(w, body)?; }
+            254 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckThreatReward: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
             255 => {}
-            256 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_Macro: missing body object"))?; ConditionData_MacroPayload::write_from_json_dict(w, body)?; }
-            257 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetAngularVelocity: missing body object"))?; ConditionData_GetAngularVelocityPayload::write_from_json_dict(w, body)?; }
-            258 => {}
-            259 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckPlayerCameraLookAtAngle: missing body object"))?; ConditionData_CheckPlayerCameraLookAtAnglePayload::write_from_json_dict(w, body)?; }
-            260 => {}
-            261 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckDamageElementalType: missing body object"))?; ConditionData_CheckDamageElementalTypePayload::write_from_json_dict(w, body)?; }
-            262 => {}
-            263 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CharacterTier: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            264 => {}
-            265 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionNodeState: missing body object"))?; ConditionData_GetFactionNodeStatePayload::write_from_json_dict(w, body)?; }
-            266 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCurrentFactionNodeState: missing body object"))?; ConditionData_GetCurrentFactionNodeStatePayload::write_from_json_dict(w, body)?; }
-            267 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsFactionNodeKnockDown: missing body object"))?; ConditionData_IsFactionNodeKnockDownPayload::write_from_json_dict(w, body)?; }
-            268 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionNodeBlockSubType: missing body object"))?; ConditionData_GetFactionNodeBlockSubTypePayload::write_from_json_dict(w, body)?; }
-            269 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionResource: missing body object"))?; ConditionData_GetFactionResourcePayload::write_from_json_dict(w, body)?; }
-            270 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsFactionNodeMissionGaugeEnable: missing body object"))?; ConditionData_IsFactionNodeMissionGaugeEnablePayload::write_from_json_dict(w, body)?; }
-            271 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCharacterGroupKey: missing body object"))?; ConditionData_CheckCharacterGroupKeyPayload::write_from_json_dict(w, body)?; }
-            272 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GameEventParam: missing body object"))?; ConditionData_GameEventParamPayload::write_from_json_dict(w, body)?; }
-            273 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFactionRelation: missing body object"))?; ConditionData_CheckFactionRelationPayload::write_from_json_dict(w, body)?; }
-            274 => {}
-            275 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRide: missing body object"))?; ConditionData_CheckRidePayload::write_from_json_dict(w, body)?; }
-            276 => {}
-            277 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckImpulseDirection: missing body object"))?; ConditionData_CheckImpulseDirectionPayload::write_from_json_dict(w, body)?; }
-            278 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetGimmickRotationFromSpawn: missing body object"))?; ConditionData_GetGimmickRotationFromSpawnPayload::write_from_json_dict(w, body)?; }
-            279 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_SkillTreeNodeLearnable: missing body object"))?; ConditionData_SkillTreeNodeLearnablePayload::write_from_json_dict(w, body)?; }
-            280 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFactionKey: missing body object"))?; ConditionData_CheckFactionKeyPayload::write_from_json_dict(w, body)?; }
-            281 => {}
-            282 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckConquerorFaction: missing body object"))?; ConditionData_CheckConquerorFactionPayload::write_from_json_dict(w, body)?; }
-            283 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckPositionOwnerFaction: missing body object"))?; ConditionData_CheckPositionOwnerFactionPayload::write_from_json_dict(w, body)?; }
-            284 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCharacterItemSocket: missing body object"))?; ConditionData_CheckCharacterItemSocketPayload::write_from_json_dict(w, body)?; }
-            285 => {}
+            256 => {}
+            257 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_Macro: missing body object"))?; ConditionData_MacroPayload::write_from_json_dict(w, body)?; }
+            258 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetAngularVelocity: missing body object"))?; ConditionData_GetAngularVelocityPayload::write_from_json_dict(w, body)?; }
+            259 => {}
+            260 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckPlayerCameraLookAtAngle: missing body object"))?; ConditionData_CheckPlayerCameraLookAtAnglePayload::write_from_json_dict(w, body)?; }
+            261 => {}
+            262 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckDamageElementalType: missing body object"))?; ConditionData_CheckDamageElementalTypePayload::write_from_json_dict(w, body)?; }
+            263 => {}
+            264 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CharacterTier: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            265 => {}
+            266 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionNodeState: missing body object"))?; ConditionData_GetFactionNodeStatePayload::write_from_json_dict(w, body)?; }
+            267 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCurrentFactionNodeState: missing body object"))?; ConditionData_GetCurrentFactionNodeStatePayload::write_from_json_dict(w, body)?; }
+            268 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsFactionNodeKnockDown: missing body object"))?; ConditionData_IsFactionNodeKnockDownPayload::write_from_json_dict(w, body)?; }
+            269 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionNodeBlockSubType: missing body object"))?; ConditionData_GetFactionNodeBlockSubTypePayload::write_from_json_dict(w, body)?; }
+            270 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionResource: missing body object"))?; ConditionData_GetFactionResourcePayload::write_from_json_dict(w, body)?; }
+            271 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsFactionNodeMissionGaugeEnable: missing body object"))?; ConditionData_IsFactionNodeMissionGaugeEnablePayload::write_from_json_dict(w, body)?; }
+            272 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCharacterGroupKey: missing body object"))?; ConditionData_CheckCharacterGroupKeyPayload::write_from_json_dict(w, body)?; }
+            273 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GameEventParam: missing body object"))?; ConditionData_GameEventParamPayload::write_from_json_dict(w, body)?; }
+            274 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFactionRelation: missing body object"))?; ConditionData_CheckFactionRelationPayload::write_from_json_dict(w, body)?; }
+            275 => {}
+            276 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRide: missing body object"))?; ConditionData_CheckRidePayload::write_from_json_dict(w, body)?; }
+            277 => {}
+            278 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckImpulseDirection: missing body object"))?; ConditionData_CheckImpulseDirectionPayload::write_from_json_dict(w, body)?; }
+            279 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetGimmickRotationFromSpawn: missing body object"))?; ConditionData_GetGimmickRotationFromSpawnPayload::write_from_json_dict(w, body)?; }
+            280 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_SkillTreeNodeLearnable: missing body object"))?; ConditionData_SkillTreeNodeLearnablePayload::write_from_json_dict(w, body)?; }
+            281 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFactionKey: missing body object"))?; ConditionData_CheckFactionKeyPayload::write_from_json_dict(w, body)?; }
+            282 => {}
+            283 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckConquerorFaction: missing body object"))?; ConditionData_CheckConquerorFactionPayload::write_from_json_dict(w, body)?; }
+            284 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckPositionOwnerFaction: missing body object"))?; ConditionData_CheckPositionOwnerFactionPayload::write_from_json_dict(w, body)?; }
+            285 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCharacterItemSocket: missing body object"))?; ConditionData_CheckCharacterItemSocketPayload::write_from_json_dict(w, body)?; }
             286 => {}
-            287 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInSpecialModeStage: missing body object"))?; OneU32BodyPayload::write_from_json_dict(w, body)?; }
-            288 => {}
-            289 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetInventoryWeightLevel: missing body object"))?; ConditionData_GetInventoryWeightLevelPayload::write_from_json_dict(w, body)?; }
-            290 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckReserveSlot: missing body object"))?; ConditionData_CheckReserveSlotPayload::write_from_json_dict(w, body)?; }
-            291 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCanSupplyToRoyal: missing body object"))?; ConditionData_CheckCanSupplyToRoyalPayload::write_from_json_dict(w, body)?; }
-            292 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRoyalSupplyOpen: missing body object"))?; ConditionData_CheckRoyalSupplyOpenPayload::write_from_json_dict(w, body)?; }
-            293 => {}
-            294 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetEquipGimmickItemUsableCount: missing body object"))?; ConditionData_GetEquipGimmickItemUsableCountPayload::write_from_json_dict(w, body)?; }
-            295 => {}
+            287 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCurrentEquipType_OrTag286: missing body object"))?; TwoU32BodyPayload::write_from_json_dict(w, body)?; }
+            288 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInSpecialModeStage: missing body object"))?; OneU32BodyPayload::write_from_json_dict(w, body)?; }
+            289 => {}
+            290 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetInventoryWeightLevel: missing body object"))?; ConditionData_GetInventoryWeightLevelPayload::write_from_json_dict(w, body)?; }
+            291 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckReserveSlot: missing body object"))?; ConditionData_CheckReserveSlotPayload::write_from_json_dict(w, body)?; }
+            292 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCanSupplyToRoyal: missing body object"))?; ConditionData_CheckCanSupplyToRoyalPayload::write_from_json_dict(w, body)?; }
+            293 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckRoyalSupplyOpen: missing body object"))?; ConditionData_CheckRoyalSupplyOpenPayload::write_from_json_dict(w, body)?; }
+            294 => {}
+            295 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetEquipGimmickItemUsableCount: missing body object"))?; ConditionData_GetEquipGimmickItemUsableCountPayload::write_from_json_dict(w, body)?; }
             296 => {}
-            297 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTargetHackable: missing body object"))?; ConditionData_CheckGimmickTargetHackablePayload::write_from_json_dict(w, body)?; }
-            298 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsHackable: missing body object"))?; ConditionData_IsHackablePayload::write_from_json_dict(w, body)?; }
-            299 => {}
-            300 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttackName: missing body object"))?; OneU32BodyPayload::write_from_json_dict(w, body)?; }
-            301 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttackFromType: missing body object"))?; ConditionData_CheckAttackFromTypePayload::write_from_json_dict(w, body)?; }
-            302 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickAngleToTarget: missing body object"))?; ConditionData_CheckGimmickAngleToTargetPayload::write_from_json_dict(w, body)?; }
-            303 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSpawnPositionRegion: missing body object"))?; ConditionData_CheckSpawnPositionRegionPayload::write_from_json_dict(w, body)?; }
-            304 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsGamePlayLevelGimmick: missing body object"))?; ConditionData_IsGamePlayLevelGimmickPayload::write_from_json_dict(w, body)?; }
-            305 => {}
-            306 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCompleteLevelGimmick: missing body object"))?; ConditionData_CheckCompleteLevelGimmickPayload::write_from_json_dict(w, body)?; }
-            307 => {}
-            308 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckShareValue: missing body object"))?; ConditionData_CheckShareValuePayload::write_from_json_dict(w, body)?; }
-            309 => {}
+            297 => {}
+            298 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickTargetHackable: missing body object"))?; ConditionData_CheckGimmickTargetHackablePayload::write_from_json_dict(w, body)?; }
+            299 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsHackable: missing body object"))?; ConditionData_IsHackablePayload::write_from_json_dict(w, body)?; }
+            300 => {}
+            301 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttackName: missing body object"))?; OneU32BodyPayload::write_from_json_dict(w, body)?; }
+            302 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAttackFromType: missing body object"))?; ConditionData_CheckAttackFromTypePayload::write_from_json_dict(w, body)?; }
+            303 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGimmickAngleToTarget: missing body object"))?; ConditionData_CheckGimmickAngleToTargetPayload::write_from_json_dict(w, body)?; }
+            304 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckSpawnPositionRegion: missing body object"))?; ConditionData_CheckSpawnPositionRegionPayload::write_from_json_dict(w, body)?; }
+            305 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsGamePlayLevelGimmick: missing body object"))?; ConditionData_IsGamePlayLevelGimmickPayload::write_from_json_dict(w, body)?; }
+            306 => {}
+            307 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCompleteLevelGimmick: missing body object"))?; ConditionData_CheckCompleteLevelGimmickPayload::write_from_json_dict(w, body)?; }
+            308 => {}
+            309 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckShareValue: missing body object"))?; ConditionData_CheckShareValuePayload::write_from_json_dict(w, body)?; }
             310 => {}
             311 => {}
             312 => {}
             313 => {}
             314 => {}
-            315 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCurrentSubLevel: missing body object"))?; ConditionData_GetCurrentSubLevelPayload::write_from_json_dict(w, body)?; }
-            316 => {}
+            315 => {}
+            316 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCurrentSubLevel: missing body object"))?; ConditionData_GetCurrentSubLevelPayload::write_from_json_dict(w, body)?; }
             317 => {}
             318 => {}
-            319 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_DockingChildTagCount: missing body object"))?; ConditionData_DockingChildTagCountPayload::write_from_json_dict(w, body)?; }
-            320 => {}
+            319 => {}
+            320 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_DockingChildTagCount: missing body object"))?; ConditionData_DockingChildTagCountPayload::write_from_json_dict(w, body)?; }
             321 => {}
-            322 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInteractable: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            323 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckVehicleType: missing body object"))?; ConditionData_CheckVehicleTypePayload::write_from_json_dict(w, body)?; }
-            324 => {}
+            322 => {}
+            323 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInteractable: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            324 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckVehicleType: missing body object"))?; ConditionData_CheckVehicleTypePayload::write_from_json_dict(w, body)?; }
             325 => {}
-            326 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_LostActor: missing body object"))?; ConditionData_LostActorPayload::write_from_json_dict(w, body)?; }
-            327 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_LostGimmick: missing body object"))?; ConditionData_LostGimmickPayload::write_from_json_dict(w, body)?; }
-            328 => {}
+            326 => {}
+            327 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_LostActor: missing body object"))?; ConditionData_LostActorPayload::write_from_json_dict(w, body)?; }
+            328 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_LostGimmick: missing body object"))?; ConditionData_LostGimmickPayload::write_from_json_dict(w, body)?; }
             329 => {}
             330 => {}
-            331 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetMinigameSeed: missing body object"))?; ConditionData_GetMinigameSeedPayload::write_from_json_dict(w, body)?; }
-            332 => {}
+            331 => {}
+            332 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetMinigameSeed: missing body object"))?; ConditionData_GetMinigameSeedPayload::write_from_json_dict(w, body)?; }
             333 => {}
-            334 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsDockingGimmickTerrainRegionSummonable: missing body object"))?; ConditionData_IsDockingGimmickTerrainRegionSummonablePayload::write_from_json_dict(w, body)?; }
-            335 => {}
+            334 => {}
+            335 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsDockingGimmickTerrainRegionSummonable: missing body object"))?; ConditionData_IsDockingGimmickTerrainRegionSummonablePayload::write_from_json_dict(w, body)?; }
             336 => {}
             337 => {}
-            338 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckDropSetDropable: missing body object"))?; ConditionData_CheckDropSetDropablePayload::write_from_json_dict(w, body)?; }
-            339 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionResearchProgress: missing body object"))?; ConditionData_GetFactionResearchProgressPayload::write_from_json_dict(w, body)?; }
-            340 => {}
+            338 => {}
+            339 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckDropSetDropable: missing body object"))?; ConditionData_CheckDropSetDropablePayload::write_from_json_dict(w, body)?; }
+            340 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFactionResearchProgress: missing body object"))?; ConditionData_GetFactionResearchProgressPayload::write_from_json_dict(w, body)?; }
             341 => {}
-            342 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_HasQuestDialog: missing body object"))?; ConditionData_HasQuestDialogPayload::write_from_json_dict(w, body)?; }
-            343 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckQuestDialogCategory: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            344 => {}
-            345 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTarget: missing body object"))?; ConditionData_CheckTargetPayload::write_from_json_dict(w, body)?; }
-            346 => {}
-            347 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFertilizerAmountPercent: missing body object"))?; ConditionData_GetFertilizerAmountPercentPayload::write_from_json_dict(w, body)?; }
-            348 => {}
+            342 => {}
+            343 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_HasQuestDialog: missing body object"))?; ConditionData_HasQuestDialogPayload::write_from_json_dict(w, body)?; }
+            344 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckQuestDialogCategory: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            345 => {}
+            346 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTarget: missing body object"))?; ConditionData_CheckTargetPayload::write_from_json_dict(w, body)?; }
+            347 => {}
+            348 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetFertilizerAmountPercent: missing body object"))?; ConditionData_GetFertilizerAmountPercentPayload::write_from_json_dict(w, body)?; }
             349 => {}
             350 => {}
-            351 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCurrentEquipType_OrTag351: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            352 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCampDonatedItemCount: missing body object"))?; ConditionData_GetCampDonatedItemCountPayload::write_from_json_dict(w, body)?; }
-            353 => {}
-            354 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsCharacter: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            355 => {}
-            356 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsTargetOfOperatorDockingGimmick: missing body object"))?; ConditionData_IsTargetOfOperatorDockingGimmickPayload::write_from_json_dict(w, body)?; }
-            357 => {}
-            358 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMercenaryType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            359 => {}
-            360 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTargetDropListToPushInventory: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            361 => {}
+            351 => {}
+            352 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCurrentEquipType_OrTag351: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            353 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetCampDonatedItemCount: missing body object"))?; ConditionData_GetCampDonatedItemCountPayload::write_from_json_dict(w, body)?; }
+            354 => {}
+            355 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsCharacter: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            356 => {}
+            357 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsTargetOfOperatorDockingGimmick: missing body object"))?; ConditionData_IsTargetOfOperatorDockingGimmickPayload::write_from_json_dict(w, body)?; }
+            358 => {}
+            359 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMercenaryType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            360 => {}
+            361 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckTargetDropListToPushInventory: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
             362 => {}
             363 => {}
-            364 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInRegionTag: missing body object"))?; ConditionData_IsInRegionTagPayload::write_from_json_dict(w, body)?; }
-            365 => {}
+            364 => {}
+            365 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInRegionTag: missing body object"))?; ConditionData_IsInRegionTagPayload::write_from_json_dict(w, body)?; }
             366 => {}
             367 => {}
             368 => {}
-            369 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInGlobalGameEventArea: missing body object"))?; ConditionData_IsInGlobalGameEventAreaPayload::write_from_json_dict(w, body)?; }
-            370 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckOwnershipState: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            371 => {}
-            372 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCurrentGlobalGameEvent: missing body object"))?; ConditionData_CheckCurrentGlobalGameEventPayload::write_from_json_dict(w, body)?; }
-            373 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGamePlayVariable: missing body object"))?; ConditionData_CheckGamePlayVariablePayload::write_from_json_dict(w, body)?; }
-            374 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsSpawnOwner: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            375 => {}
+            369 => {}
+            370 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsInGlobalGameEventArea: missing body object"))?; ConditionData_IsInGlobalGameEventAreaPayload::write_from_json_dict(w, body)?; }
+            371 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckOwnershipState: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            372 => {}
+            373 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckCurrentGlobalGameEvent: missing body object"))?; ConditionData_CheckCurrentGlobalGameEventPayload::write_from_json_dict(w, body)?; }
+            374 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckGamePlayVariable: missing body object"))?; ConditionData_CheckGamePlayVariablePayload::write_from_json_dict(w, body)?; }
+            375 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_IsSpawnOwner: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
             376 => {}
             377 => {}
-            378 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetInventorySlotFillPercent: missing body object"))?; ConditionData_GetInventorySlotFillPercentPayload::write_from_json_dict(w, body)?; }
-            379 => {}
+            378 => {}
+            379 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetInventorySlotFillPercent: missing body object"))?; ConditionData_GetInventorySlotFillPercentPayload::write_from_json_dict(w, body)?; }
             380 => {}
-            381 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_MiniGameWin: missing body object"))?; ConditionData_MiniGameWinPayload::write_from_json_dict(w, body)?; }
-            382 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_MiniGameRound: missing body object"))?; ConditionData_MiniGameRoundPayload::write_from_json_dict(w, body)?; }
-            383 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_MiniGameWinningStreak: missing body object"))?; ConditionData_MiniGameWinningStreakPayload::write_from_json_dict(w, body)?; }
-            384 => {}
+            381 => {}
+            382 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_MiniGameWin: missing body object"))?; ConditionData_MiniGameWinPayload::write_from_json_dict(w, body)?; }
+            383 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_MiniGameRound: missing body object"))?; ConditionData_MiniGameRoundPayload::write_from_json_dict(w, body)?; }
+            384 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_MiniGameWinningStreak: missing body object"))?; ConditionData_MiniGameWinningStreakPayload::write_from_json_dict(w, body)?; }
             385 => {}
-            386 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenaryBlockedAbility: missing body object"))?; ConditionData_CheckMainMercenaryBlockedAbilityPayload::write_from_json_dict(w, body)?; }
-            387 => {}
+            386 => {}
+            387 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMainMercenaryBlockedAbility: missing body object"))?; ConditionData_CheckMainMercenaryBlockedAbilityPayload::write_from_json_dict(w, body)?; }
             388 => {}
-            389 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetNodeCombatPower: missing body object"))?; ConditionData_GetNodeCombatPowerPayload::write_from_json_dict(w, body)?; }
-            390 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_ReserveSlotItemCount: missing body object"))?; ConditionData_ReserveSlotItemCountPayload::write_from_json_dict(w, body)?; }
-            391 => {}
+            389 => {}
+            390 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetNodeCombatPower: missing body object"))?; ConditionData_GetNodeCombatPowerPayload::write_from_json_dict(w, body)?; }
+            391 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_ReserveSlotItemCount: missing body object"))?; ConditionData_ReserveSlotItemCountPayload::write_from_json_dict(w, body)?; }
             392 => {}
-            393 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAccompanyType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
-            394 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFactionWantedLevel: missing body object"))?; ConditionData_CheckFactionWantedLevelPayload::write_from_json_dict(w, body)?; }
-            395 => {}
-            396 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMercenaryCallCooltime: missing body object"))?; ConditionData_CheckMercenaryCallCooltimePayload::write_from_json_dict(w, body)?; }
-            397 => {}
+            393 => {}
+            394 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckAccompanyType: missing body object"))?; OneByteBodyPayload::write_from_json_dict(w, body)?; }
+            395 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckFactionWantedLevel: missing body object"))?; ConditionData_CheckFactionWantedLevelPayload::write_from_json_dict(w, body)?; }
+            396 => {}
+            397 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckMercenaryCallCooltime: missing body object"))?; ConditionData_CheckMercenaryCallCooltimePayload::write_from_json_dict(w, body)?; }
             398 => {}
-            399 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckInventoryMaxSlotCount: missing body object"))?; ConditionData_CheckInventoryMaxSlotCountPayload::write_from_json_dict(w, body)?; }
-            400 => {}
-            401 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetDifficultyOption: missing body object"))?; ConditionData_GetDifficultyOptionPayload::write_from_json_dict(w, body)?; }
-            402 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetMaxWantedLevel: missing body object"))?; ConditionData_GetMaxWantedLevelPayload::write_from_json_dict(w, body)?; }
-            403 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckPlayerHouse: missing body object"))?; ConditionData_CheckPlayerHousePayload::write_from_json_dict(w, body)?; }
-            404 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckActivatedHousingRegion: missing body object"))?; ConditionData_CheckActivatedHousingRegionPayload::write_from_json_dict(w, body)?; }
+            399 => {}
+            400 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckInventoryMaxSlotCount: missing body object"))?; ConditionData_CheckInventoryMaxSlotCountPayload::write_from_json_dict(w, body)?; }
+            401 => {}
+            402 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetDifficultyOption: missing body object"))?; ConditionData_GetDifficultyOptionPayload::write_from_json_dict(w, body)?; }
+            403 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_GetMaxWantedLevel: missing body object"))?; ConditionData_GetMaxWantedLevelPayload::write_from_json_dict(w, body)?; }
+            404 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckPlayerHouse: missing body object"))?; ConditionData_CheckPlayerHousePayload::write_from_json_dict(w, body)?; }
+            405 => { let body = obj.get("body").and_then(|x| x.as_object()).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "ConditionData_CheckActivatedHousingRegion: missing body object"))?; ConditionData_CheckActivatedHousingRegionPayload::write_from_json_dict(w, body)?; }
             other => return Err(io::Error::new(io::ErrorKind::InvalidData,
                 format!("ConditionDataVariant: unknown disc {}", other))),
         }
@@ -3961,284 +3961,284 @@ impl<'a> ConditionDataVariant<'a> {
             124 => Self::ConditionData_CheckRepairableNpc,
             125 => Self::ConditionData_CheckSpecialMode(ConditionData_CheckSpecialModePayload::read_from(data, offset)?),
             126 => Self::ConditionData_SpecialModeKey(ConditionData_SpecialModeKeyPayload::read_from(data, offset)?),
-            127 => Self::ConditionData_IsInRegion(ConditionData_IsInRegionPayload::read_from(data, offset)?),
-            128 => Self::ConditionData_IsInTown,
-            129 => Self::ConditionData_IsAboveRoad(ConditionData_IsAboveRoadPayload::read_from(data, offset)?),
-            130 => Self::ConditionData_IsInRegionType,
-            131 => Self::ConditionData_IsInSafeZone,
-            132 => Self::ConditionData_CheckTargetable(ConditionData_CheckTargetablePayload::read_from(data, offset)?),
-            133 => Self::ConditionData_CheckRetreat,
-            134 => Self::ConditionData_CheckContactableState,
-            135 => Self::ConditionData_CheckTargetToPushInventory(OneByteBodyPayload::read_from(data, offset)?),
-            136 => Self::ConditionData_CheckInventorySlotFreeCount(ConditionData_CheckInventorySlotFreeCountPayload::read_from(data, offset)?),
-            137 => Self::ConditionData_CheckCharacterHeightType,
-            138 => Self::ConditionData_CheckUnlockDoorCharacter,
-            139 => Self::ConditionData_CheckOwnerMercenary,
-            140 => Self::ConditionData_CheckIsFocusActorOwnerMercenary,
-            141 => Self::ConditionData_CheckGimmickEventParamString(ConditionData_CheckGimmickEventParamStringPayload::read_from(data, offset)?),
-            142 => Self::ConditionData_CheckGimmickEventParamFloat(ConditionData_CheckGimmickEventParamFloatPayload::read_from(data, offset)?),
-            143 => Self::ConditionData_CheckGimmickEventParamInt(ConditionData_CheckGimmickEventParamIntPayload::read_from(data, offset)?),
-            144 => Self::ConditionData_CheckGimmickEventParamAngle(ConditionData_CheckGimmickEventParamAnglePayload::read_from(data, offset)?),
-            145 => Self::ConditionData_CheckCCType(ConditionData_CheckCCTypePayload::read_from(data, offset)?),
-            146 => Self::ConditionData_CheckField(ConditionData_CheckFieldPayload::read_from(data, offset)?),
-            147 => Self::ConditionData_IsTarget(OneByteBodyPayload::read_from(data, offset)?),
-            148 => Self::ConditionData_GetFriendly(ConditionData_GetFriendlyPayload::read_from(data, offset)?),
-            149 => Self::ConditionData_CheckFriendlyLevel(ConditionData_CheckFriendlyLevelPayload::read_from(data, offset)?),
-            150 => Self::ConditionData_GetFactionfriendly(ConditionData_GetFactionfriendlyPayload::read_from(data, offset)?),
-            151 => Self::ConditionData_IsFriendlyItem,
-            152 => Self::ConditionData_IsVaryableFriendly,
-            153 => Self::ConditionData_IsPetLooting,
-            154 => Self::ConditionData_CheckWaterVoxel,
-            155 => Self::ConditionData_CheckEquipItemGroup(ConditionData_CheckEquipItemGroupPayload::read_from(data, offset)?),
-            156 => Self::ConditionData_CheckLoadingStep(ConditionData_CheckLoadingStepPayload::read_from(data, offset)?),
-            157 => Self::ConditionData_CheckGimmickEventSenderName(ConditionData_CheckGimmickEventSenderNamePayload::read_from(data, offset)?),
-            158 => Self::ConditionData_CheckGetItem(ConditionData_CheckGetItemPayload::read_from(data, offset)?),
-            159 => Self::ConditionData_CheckSealActor(ConditionData_CheckSealActorPayload::read_from(data, offset)?),
-            160 => Self::ConditionData_CheckWildVehicle,
-            161 => Self::ConditionData_CheckWild,
-            162 => Self::ConditionData_CheckAIReadyToNextTimeline,
-            163 => Self::ConditionData_AITaskSetComplete,
-            164 => Self::ConditionData_CheckAttachedGimmickCount(ConditionData_CheckAttachedGimmickCountPayload::read_from(data, offset)?),
-            165 => Self::ConditionData_CheckRemoteCatchTarget(ConditionData_CheckRemoteCatchTargetPayload::read_from(data, offset)?),
-            166 => Self::ConditionData_CheckRemoteCatchTargetItemKey(ConditionData_CheckRemoteCatchTargetItemKeyPayload::read_from(data, offset)?),
-            167 => Self::ConditionData_CheckRemoteCatchable,
-            168 => Self::ConditionData_CheckGimmickEvent(ConditionData_CheckGimmickEventPayload::read_from(data, offset)?),
-            169 => Self::ConditionData_IsThrowing,
-            170 => Self::ConditionData_CheckLoadedArrow,
-            171 => Self::ConditionData_CheckRemoteCatched,
-            172 => Self::ConditionData_CheckCatched,
-            173 => Self::ConditionData_CheckStageChartDialogEnd(ConditionData_CheckStageChartDialogEndPayload::read_from(data, offset)?),
-            174 => Self::ConditionData_CheckRider(OneByteBodyPayload::read_from(data, offset)?),
-            175 => Self::ConditionData_CheckGimmickTarget(ConditionData_CheckGimmickTargetPayload::read_from(data, offset)?),
-            176 => Self::ConditionData_GetGimmickVariable(ConditionData_GetGimmickVariablePayload::read_from(data, offset)?),
-            177 => Self::ConditionData_GetRandomPercentBySpawnPositionSeed(ConditionData_GetRandomPercentBySpawnPositionSeedPayload::read_from(data, offset)?),
-            178 => Self::ConditionData_CheckStoreType(OneByteBodyPayload::read_from(data, offset)?),
-            179 => Self::ConditionData_IsExistStoreItemToSell,
-            180 => Self::ConditionData_CheckNpcFunctionType(OneByteBodyPayload::read_from(data, offset)?),
-            181 => Self::ConditionData_CheckExistPrice,
-            182 => Self::ConditionData_SubTimelineName(ConditionData_SubTimelineNamePayload::read_from(data, offset)?),
-            183 => Self::ConditionData_ExistTimeline(ConditionData_ExistTimelinePayload::read_from(data, offset)?),
-            184 => Self::ConditionData_ExistFolder(ConditionData_ExistFolderPayload::read_from(data, offset)?),
-            185 => Self::ConditionData_ExistSequencerCamera,
-            186 => Self::ConditionData_IsCutJump,
-            187 => Self::ConditionData_CheckReserveItemSlotOut(ConditionData_CheckReserveItemSlotOutPayload::read_from(data, offset)?),
-            188 => Self::ConditionData_CheckGateOpenable,
-            189 => Self::ConditionData_CheckGimmickItemKey(ConditionData_CheckGimmickItemKeyPayload::read_from(data, offset)?),
-            190 => Self::ConditionData_CheckTargetGimmickUnlockable,
-            191 => Self::ConditionData_CheckUnlockableByMission,
-            192 => Self::ConditionData_CheckMainMercenarySummoned(ConditionData_CheckMainMercenarySummonedPayload::read_from(data, offset)?),
-            193 => Self::ConditionData_CheckMainMercenaryNearToLeader(ConditionData_CheckMainMercenaryNearToLeaderPayload::read_from(data, offset)?),
-            194 => Self::ConditionData_CheckMainMercenaryHaveItemGroupPrice(ConditionData_CheckMainMercenaryHaveItemGroupPricePayload::read_from(data, offset)?),
-            195 => Self::ConditionData_CheckHaveMercenary(ConditionData_CheckHaveMercenaryPayload::read_from(data, offset)?),
-            196 => Self::ConditionData_CheckHaveVehicle(ConditionData_CheckHaveVehiclePayload::read_from(data, offset)?),
-            197 => Self::ConditionData_CheckGimmickImpulseWhereType(ConditionData_CheckGimmickImpulseWhereTypePayload::read_from(data, offset)?),
-            198 => Self::ConditionData_CheckElementalMaterialStateSuccess(ConditionData_CheckElementalMaterialStateSuccessPayload::read_from(data, offset)?),
-            199 => Self::ConditionData_CheckCurrentEquipType_OrTag199,
-            200 => Self::ConditionData_CheckBurnable,
-            201 => Self::ConditionData_CheckBreakable,
-            202 => Self::ConditionData_CheckOriginalBreakable,
-            203 => Self::ConditionData_CheckBreaked,
-            204 => Self::ConditionData_IsDockingChild,
-            205 => Self::ConditionData_CheckTriggerVolumeGroupIndex(ConditionData_CheckTriggerVolumeGroupIndexPayload::read_from(data, offset)?),
-            206 => Self::ConditionData_Weather(ConditionData_WeatherPayload::read_from(data, offset)?),
-            207 => Self::ConditionData_CheckGimmickParentLinkCount(ConditionData_CheckGimmickParentLinkCountPayload::read_from(data, offset)?),
-            208 => Self::ConditionData_CheckGimmickRemoteCatchType,
-            209 => Self::ConditionData_CheckGimmickTriggerCount(ConditionData_CheckGimmickTriggerCountPayload::read_from(data, offset)?),
-            210 => Self::ConditionData_IsFullGimmickAttachment,
-            211 => Self::ConditionData_CheckGimmickAttachmentType,
-            212 => Self::ConditionData_CheckGimmickTargetCount(ConditionData_CheckGimmickTargetCountPayload::read_from(data, offset)?),
-            213 => Self::ConditionData_CheckGimmickNonBreakTargetCount(ConditionData_CheckGimmickNonBreakTargetCountPayload::read_from(data, offset)?),
-            214 => Self::ConditionData_CheckExistStealItem(ConditionData_CheckExistStealItemPayload::read_from(data, offset)?),
-            215 => Self::ConditionData_CheckElementalMaterialType,
-            216 => Self::ConditionData_IsGimmickSealComplete,
-            217 => Self::ConditionData_IsAcquiredItem,
-            218 => Self::ConditionData_IsFullGimmickTriggerEnteredTarget(ConditionData_IsFullGimmickTriggerEnteredTargetPayload::read_from(data, offset)?),
-            219 => Self::ConditionData_CheckGimmickLinkSignalOn,
-            220 => Self::ConditionData_CheckGimmickLookAtComplete,
-            221 => Self::ConditionData_CheckAttackImpulseLevel(ConditionData_CheckAttackImpulseLevelPayload::read_from(data, offset)?),
-            222 => Self::ConditionData_CheckBreakableAttackImpulseLevel,
-            223 => Self::ConditionData_CheckSpawnReason(ConditionData_CheckSpawnReasonPayload::read_from(data, offset)?),
-            224 => Self::ConditionData_CheckFriendlyItemReward,
-            225 => Self::ConditionData_CheckNearestTriggerTargetDistance(ConditionData_CheckNearestTriggerTargetDistancePayload::read_from(data, offset)?),
-            226 => Self::ConditionData_CheckHasMagneticPartner,
-            227 => Self::ConditionData_CheckForceFieldType,
-            228 => Self::ConditionData_CheckForceFieldTargetType,
-            229 => Self::ConditionData_CheckExistDropItem,
-            230 => Self::ConditionData_CheckGlobalStageSequencerExit(ConditionData_CheckGlobalStageSequencerExitPayload::read_from(data, offset)?),
-            231 => Self::ConditionData_CheckSealable(ConditionData_CheckSealablePayload::read_from(data, offset)?),
-            232 => Self::ConditionData_CheckTargetSealable,
-            233 => Self::ConditionData_CheckSealState,
-            234 => Self::ConditionData_HasSealDropableItem,
-            235 => Self::ConditionData_CheckExistGimmickPoint(ConditionData_CheckExistGimmickPointPayload::read_from(data, offset)?),
-            236 => Self::ConditionData_CheckGimmickOnTime,
-            237 => Self::ConditionData_CheckLoginStep_OrTag237,
-            238 => Self::ConditionData_CheckUseGimmickOnTime,
-            239 => Self::ConditionData_GetCombinationRootVariable(ConditionData_GetCombinationRootVariablePayload::read_from(data, offset)?),
-            240 => Self::ConditionData_IsMagnetEnabled,
-            241 => Self::ConditionData_CanDisassemble,
-            242 => Self::ConditionData_CheckOriginalGimmickLength(ConditionData_CheckOriginalGimmickLengthPayload::read_from(data, offset)?),
-            243 => Self::ConditionData_CheckGimmickPhysicsVolumeLength(ConditionData_CheckGimmickPhysicsVolumeLengthPayload::read_from(data, offset)?),
-            244 => Self::ConditionData_CheckInStealthStage,
-            245 => Self::ConditionData_IsInstantlyDeadable,
-            246 => Self::ConditionData_IsCrimeTarget,
-            247 => Self::ConditionData_CheckLookAtSunDirection,
-            248 => Self::ConditionData_CheckHirable,
-            249 => Self::ConditionData_CheckBuffTag(ConditionData_CheckBuffTagPayload::read_from(data, offset)?),
-            250 => Self::ConditionData_CheckRidingVehicleType(ConditionData_CheckRidingVehicleTypePayload::read_from(data, offset)?),
-            251 => Self::ConditionData_CheckRidingVehicleKey(ConditionData_CheckRidingVehicleKeyPayload::read_from(data, offset)?),
-            252 => Self::ConditionData_CheckRidingVehicleKeyList(ConditionData_CheckRidingVehicleKeyListPayload::read_from(data, offset)?),
-            253 => Self::ConditionData_CheckThreatReward(OneByteBodyPayload::read_from(data, offset)?),
-            254 => Self::ConditionData_IsCrossHairTarget,
-            255 => Self::ConditionData_IsAiJumpClimbTarget,
-            256 => Self::ConditionData_Macro(ConditionData_MacroPayload::read_from(data, offset)?),
-            257 => Self::ConditionData_GetAngularVelocity(ConditionData_GetAngularVelocityPayload::read_from(data, offset)?),
-            258 => Self::ConditionData_IsChildGimmick,
-            259 => Self::ConditionData_CheckPlayerCameraLookAtAngle(ConditionData_CheckPlayerCameraLookAtAnglePayload::read_from(data, offset)?),
-            260 => Self::ConditionData_CheckPlayerCameraFocusActorCovered,
-            261 => Self::ConditionData_CheckDamageElementalType(ConditionData_CheckDamageElementalTypePayload::read_from(data, offset)?),
-            262 => Self::ConditionData_IsRidingVehicle,
-            263 => Self::ConditionData_CharacterTier(OneByteBodyPayload::read_from(data, offset)?),
-            264 => Self::ConditionData_CheckEquipTargetItemActor,
-            265 => Self::ConditionData_GetFactionNodeState(ConditionData_GetFactionNodeStatePayload::read_from(data, offset)?),
-            266 => Self::ConditionData_GetCurrentFactionNodeState(ConditionData_GetCurrentFactionNodeStatePayload::read_from(data, offset)?),
-            267 => Self::ConditionData_IsFactionNodeKnockDown(ConditionData_IsFactionNodeKnockDownPayload::read_from(data, offset)?),
-            268 => Self::ConditionData_GetFactionNodeBlockSubType(ConditionData_GetFactionNodeBlockSubTypePayload::read_from(data, offset)?),
-            269 => Self::ConditionData_GetFactionResource(ConditionData_GetFactionResourcePayload::read_from(data, offset)?),
-            270 => Self::ConditionData_IsFactionNodeMissionGaugeEnable(ConditionData_IsFactionNodeMissionGaugeEnablePayload::read_from(data, offset)?),
-            271 => Self::ConditionData_CheckCharacterGroupKey(ConditionData_CheckCharacterGroupKeyPayload::read_from(data, offset)?),
-            272 => Self::ConditionData_GameEventParam(ConditionData_GameEventParamPayload::read_from(data, offset)?),
-            273 => Self::ConditionData_CheckFactionRelation(ConditionData_CheckFactionRelationPayload::read_from(data, offset)?),
-            274 => Self::ConditionData_CheckUsableStore,
-            275 => Self::ConditionData_CheckRide(ConditionData_CheckRidePayload::read_from(data, offset)?),
-            276 => Self::ConditionData_DockingToCurrentVehicle,
-            277 => Self::ConditionData_CheckImpulseDirection(ConditionData_CheckImpulseDirectionPayload::read_from(data, offset)?),
-            278 => Self::ConditionData_GetGimmickRotationFromSpawn(ConditionData_GetGimmickRotationFromSpawnPayload::read_from(data, offset)?),
-            279 => Self::ConditionData_SkillTreeNodeLearnable(ConditionData_SkillTreeNodeLearnablePayload::read_from(data, offset)?),
-            280 => Self::ConditionData_CheckFactionKey(ConditionData_CheckFactionKeyPayload::read_from(data, offset)?),
-            281 => Self::ConditionData_CheckFactionCategory,
-            282 => Self::ConditionData_CheckConquerorFaction(ConditionData_CheckConquerorFactionPayload::read_from(data, offset)?),
-            283 => Self::ConditionData_CheckPositionOwnerFaction(ConditionData_CheckPositionOwnerFactionPayload::read_from(data, offset)?),
-            284 => Self::ConditionData_CheckCharacterItemSocket(ConditionData_CheckCharacterItemSocketPayload::read_from(data, offset)?),
-            285 => Self::ConditionData_CheckGimmickItemSocket,
-            286 => Self::ConditionData_CheckCurrentEquipType_OrTag286,
-            287 => Self::ConditionData_IsInSpecialModeStage(OneU32BodyPayload::read_from(data, offset)?),
-            288 => Self::ConditionData_IsSpawnedOnPlatform,
-            289 => Self::ConditionData_GetInventoryWeightLevel(ConditionData_GetInventoryWeightLevelPayload::read_from(data, offset)?),
-            290 => Self::ConditionData_CheckReserveSlot(ConditionData_CheckReserveSlotPayload::read_from(data, offset)?),
-            291 => Self::ConditionData_CheckCanSupplyToRoyal(ConditionData_CheckCanSupplyToRoyalPayload::read_from(data, offset)?),
-            292 => Self::ConditionData_CheckRoyalSupplyOpen(ConditionData_CheckRoyalSupplyOpenPayload::read_from(data, offset)?),
-            293 => Self::ConditionData_CheckDockingWeaponOut,
-            294 => Self::ConditionData_GetEquipGimmickItemUsableCount(ConditionData_GetEquipGimmickItemUsableCountPayload::read_from(data, offset)?),
-            295 => Self::ConditionData_CurrentStateEquipItemUseSuccess,
-            296 => Self::ConditionData_IsEquipGimmickItemBroken,
-            297 => Self::ConditionData_CheckGimmickTargetHackable(ConditionData_CheckGimmickTargetHackablePayload::read_from(data, offset)?),
-            298 => Self::ConditionData_IsHackable(ConditionData_IsHackablePayload::read_from(data, offset)?),
-            299 => Self::ConditionData_CheckDockingParentDead,
-            300 => Self::ConditionData_CheckAttackName(OneU32BodyPayload::read_from(data, offset)?),
-            301 => Self::ConditionData_CheckAttackFromType(ConditionData_CheckAttackFromTypePayload::read_from(data, offset)?),
-            302 => Self::ConditionData_CheckGimmickAngleToTarget(ConditionData_CheckGimmickAngleToTargetPayload::read_from(data, offset)?),
-            303 => Self::ConditionData_CheckSpawnPositionRegion(ConditionData_CheckSpawnPositionRegionPayload::read_from(data, offset)?),
-            304 => Self::ConditionData_IsGamePlayLevelGimmick(ConditionData_IsGamePlayLevelGimmickPayload::read_from(data, offset)?),
-            305 => Self::ConditionData_CheckCompleteStageGimmick,
-            306 => Self::ConditionData_CheckCompleteLevelGimmick(ConditionData_CheckCompleteLevelGimmickPayload::read_from(data, offset)?),
-            307 => Self::ConditionData_IsRootGimmickLocked,
-            308 => Self::ConditionData_CheckShareValue(ConditionData_CheckShareValuePayload::read_from(data, offset)?),
-            309 => Self::ConditionData_CheckLoginStep_OrTag309,
-            310 => Self::ConditionData_CheckGimmickknowledgeLearned,
-            311 => Self::ConditionData_IsEquipDockingGimmick,
-            312 => Self::ConditionData_CheckPipeGimmickHaveExit,
-            313 => Self::ConditionData_IsLevelGimmickControlByMission,
-            314 => Self::ConditionData_IsLevelGimmickMissionComplete,
-            315 => Self::ConditionData_GetCurrentSubLevel(ConditionData_GetCurrentSubLevelPayload::read_from(data, offset)?),
-            316 => Self::ConditionData_IsHyosiMercenary,
-            317 => Self::ConditionData_CheckLoginStep_OrTag317,
-            318 => Self::ConditionData_CheckLoginStep_OrTag318,
-            319 => Self::ConditionData_DockingChildTagCount(ConditionData_DockingChildTagCountPayload::read_from(data, offset)?),
-            320 => Self::ConditionData_HasBagDocking,
-            321 => Self::ConditionData_IsSpecialModeStartComplete,
-            322 => Self::ConditionData_IsInteractable(OneByteBodyPayload::read_from(data, offset)?),
-            323 => Self::ConditionData_CheckVehicleType(ConditionData_CheckVehicleTypePayload::read_from(data, offset)?),
-            324 => Self::ConditionData_IsVehicleLinked,
-            325 => Self::ConditionData_IsSpawnByLinkedVehicle,
-            326 => Self::ConditionData_LostActor(ConditionData_LostActorPayload::read_from(data, offset)?),
-            327 => Self::ConditionData_LostGimmick(ConditionData_LostGimmickPayload::read_from(data, offset)?),
-            328 => Self::ConditionData_InteractableSpeaker,
-            329 => Self::ConditionData_CheckMiseensceneScheduleIndex,
-            330 => Self::ConditionData_CheckFlip,
-            331 => Self::ConditionData_GetMinigameSeed(ConditionData_GetMinigameSeedPayload::read_from(data, offset)?),
-            332 => Self::ConditionData_CheckMainMercenaryDead,
-            333 => Self::ConditionData_HasAttachableGimmick,
-            334 => Self::ConditionData_IsDockingGimmickTerrainRegionSummonable(ConditionData_IsDockingGimmickTerrainRegionSummonablePayload::read_from(data, offset)?),
-            335 => Self::ConditionData_IsGimmickHousingMode,
-            336 => Self::ConditionData_IsInHousingRegion,
-            337 => Self::ConditionData_IsGimmickPlacedByHousing,
-            338 => Self::ConditionData_CheckDropSetDropable(ConditionData_CheckDropSetDropablePayload::read_from(data, offset)?),
-            339 => Self::ConditionData_GetFactionResearchProgress(ConditionData_GetFactionResearchProgressPayload::read_from(data, offset)?),
-            340 => Self::ConditionData_HasLinkedDecoGimmick,
-            341 => Self::ConditionData_IsClientOnlyActor,
-            342 => Self::ConditionData_HasQuestDialog(ConditionData_HasQuestDialogPayload::read_from(data, offset)?),
-            343 => Self::ConditionData_CheckQuestDialogCategory(OneByteBodyPayload::read_from(data, offset)?),
-            344 => Self::ConditionData_IsSpeakingQuestDialog,
-            345 => Self::ConditionData_CheckTarget(ConditionData_CheckTargetPayload::read_from(data, offset)?),
-            346 => Self::ConditionData_CheckHaveLoadingTargetStage_OrTag346,
-            347 => Self::ConditionData_GetFertilizerAmountPercent(ConditionData_GetFertilizerAmountPercentPayload::read_from(data, offset)?),
-            348 => Self::ConditionData_IsDetectModeShowEnemy,
-            349 => Self::ConditionData_CheckHireMercenary,
-            350 => Self::ConditionData_IsExistSoldItemToStore,
-            351 => Self::ConditionData_CheckCurrentEquipType_OrTag351(OneByteBodyPayload::read_from(data, offset)?),
-            352 => Self::ConditionData_GetCampDonatedItemCount(ConditionData_GetCampDonatedItemCountPayload::read_from(data, offset)?),
-            353 => Self::ConditionData_IsGimmick,
-            354 => Self::ConditionData_IsCharacter(OneByteBodyPayload::read_from(data, offset)?),
-            355 => Self::ConditionData_IsItem,
-            356 => Self::ConditionData_IsTargetOfOperatorDockingGimmick(ConditionData_IsTargetOfOperatorDockingGimmickPayload::read_from(data, offset)?),
-            357 => Self::ConditionData_CheckMercenaryOccupationState,
-            358 => Self::ConditionData_CheckMercenaryType(OneByteBodyPayload::read_from(data, offset)?),
-            359 => Self::ConditionData_IsPassableState,
-            360 => Self::ConditionData_CheckTargetDropListToPushInventory(OneByteBodyPayload::read_from(data, offset)?),
-            361 => Self::ConditionData_IsMiniGameBanned,
-            362 => Self::ConditionData_IsInGrassField,
-            363 => Self::ConditionData_IsCoveredBySnow,
-            364 => Self::ConditionData_IsInRegionTag(ConditionData_IsInRegionTagPayload::read_from(data, offset)?),
-            365 => Self::ConditionData_IsGround,
-            366 => Self::ConditionData_CheckCatchTarget,
-            367 => Self::ConditionData_IsFarmAnimal,
-            368 => Self::ConditionData_CheckCanTimeWrap,
-            369 => Self::ConditionData_IsInGlobalGameEventArea(ConditionData_IsInGlobalGameEventAreaPayload::read_from(data, offset)?),
-            370 => Self::ConditionData_CheckOwnershipState(OneByteBodyPayload::read_from(data, offset)?),
-            371 => Self::ConditionData_IsDokcingParentHiredMercenary,
-            372 => Self::ConditionData_CheckCurrentGlobalGameEvent(ConditionData_CheckCurrentGlobalGameEventPayload::read_from(data, offset)?),
-            373 => Self::ConditionData_CheckGamePlayVariable(ConditionData_CheckGamePlayVariablePayload::read_from(data, offset)?),
-            374 => Self::ConditionData_IsSpawnOwner(OneByteBodyPayload::read_from(data, offset)?),
-            375 => Self::ConditionData_IsLiftable,
-            376 => Self::ConditionData_IsOwnerPlayer,
-            377 => Self::ConditionData_IsAbleToFeed,
-            378 => Self::ConditionData_GetInventorySlotFillPercent(ConditionData_GetInventorySlotFillPercentPayload::read_from(data, offset)?),
-            379 => Self::ConditionData_CheckMiniGameEntranceFee,
-            380 => Self::ConditionData_CheckUnknownMeditationKnowledge,
-            381 => Self::ConditionData_MiniGameWin(ConditionData_MiniGameWinPayload::read_from(data, offset)?),
-            382 => Self::ConditionData_MiniGameRound(ConditionData_MiniGameRoundPayload::read_from(data, offset)?),
-            383 => Self::ConditionData_MiniGameWinningStreak(ConditionData_MiniGameWinningStreakPayload::read_from(data, offset)?),
-            384 => Self::ConditionData_IsVehicleAllowedInEnteredRegion,
-            385 => Self::ConditionData_CheckBlockedAbility,
-            386 => Self::ConditionData_CheckMainMercenaryBlockedAbility(ConditionData_CheckMainMercenaryBlockedAbilityPayload::read_from(data, offset)?),
-            387 => Self::ConditionData_BlockByExclusiveStage,
-            388 => Self::ConditionData_CheckNotPlayableState,
-            389 => Self::ConditionData_GetNodeCombatPower(ConditionData_GetNodeCombatPowerPayload::read_from(data, offset)?),
-            390 => Self::ConditionData_ReserveSlotItemCount(ConditionData_ReserveSlotItemCountPayload::read_from(data, offset)?),
-            391 => Self::ConditionData_PuzzleSavePresetApplied,
-            392 => Self::ConditionData_IsStableForInteraction,
-            393 => Self::ConditionData_CheckAccompanyType(OneByteBodyPayload::read_from(data, offset)?),
-            394 => Self::ConditionData_CheckFactionWantedLevel(ConditionData_CheckFactionWantedLevelPayload::read_from(data, offset)?),
-            395 => Self::ConditionData_CheckVehicleAllowableHeight,
-            396 => Self::ConditionData_CheckMercenaryCallCooltime(ConditionData_CheckMercenaryCallCooltimePayload::read_from(data, offset)?),
-            397 => Self::ConditionData_IsMiniGamePlayable,
-            398 => Self::ConditionData_IsAimingHitLimitAttackRegion,
-            399 => Self::ConditionData_CheckInventoryMaxSlotCount(ConditionData_CheckInventoryMaxSlotCountPayload::read_from(data, offset)?),
-            400 => Self::ConditionData_CheckInteractingWithOwnedObject,
-            401 => Self::ConditionData_GetDifficultyOption(ConditionData_GetDifficultyOptionPayload::read_from(data, offset)?),
-            402 => Self::ConditionData_GetMaxWantedLevel(ConditionData_GetMaxWantedLevelPayload::read_from(data, offset)?),
-            403 => Self::ConditionData_CheckPlayerHouse(ConditionData_CheckPlayerHousePayload::read_from(data, offset)?),
-            404 => Self::ConditionData_CheckActivatedHousingRegion(ConditionData_CheckActivatedHousingRegionPayload::read_from(data, offset)?),
+            128 => Self::ConditionData_IsInRegion(ConditionData_IsInRegionPayload::read_from(data, offset)?),
+            129 => Self::ConditionData_IsInTown,
+            130 => Self::ConditionData_IsAboveRoad(ConditionData_IsAboveRoadPayload::read_from(data, offset)?),
+            131 => Self::ConditionData_IsInRegionType,
+            132 => Self::ConditionData_IsInSafeZone,
+            133 => Self::ConditionData_CheckTargetable(ConditionData_CheckTargetablePayload::read_from(data, offset)?),
+            134 => Self::ConditionData_CheckRetreat,
+            135 => Self::ConditionData_CheckContactableState,
+            136 => Self::ConditionData_CheckTargetToPushInventory(OneByteBodyPayload::read_from(data, offset)?),
+            137 => Self::ConditionData_CheckInventorySlotFreeCount(ConditionData_CheckInventorySlotFreeCountPayload::read_from(data, offset)?),
+            138 => Self::ConditionData_CheckCharacterHeightType,
+            139 => Self::ConditionData_CheckUnlockDoorCharacter,
+            140 => Self::ConditionData_CheckOwnerMercenary,
+            141 => Self::ConditionData_CheckIsFocusActorOwnerMercenary,
+            142 => Self::ConditionData_CheckGimmickEventParamString(ConditionData_CheckGimmickEventParamStringPayload::read_from(data, offset)?),
+            143 => Self::ConditionData_CheckGimmickEventParamFloat(ConditionData_CheckGimmickEventParamFloatPayload::read_from(data, offset)?),
+            144 => Self::ConditionData_CheckGimmickEventParamInt(ConditionData_CheckGimmickEventParamIntPayload::read_from(data, offset)?),
+            145 => Self::ConditionData_CheckGimmickEventParamAngle(ConditionData_CheckGimmickEventParamAnglePayload::read_from(data, offset)?),
+            146 => Self::ConditionData_CheckCCType(ConditionData_CheckCCTypePayload::read_from(data, offset)?),
+            147 => Self::ConditionData_CheckField(ConditionData_CheckFieldPayload::read_from(data, offset)?),
+            148 => Self::ConditionData_IsTarget(OneByteBodyPayload::read_from(data, offset)?),
+            149 => Self::ConditionData_GetFriendly(ConditionData_GetFriendlyPayload::read_from(data, offset)?),
+            150 => Self::ConditionData_CheckFriendlyLevel(ConditionData_CheckFriendlyLevelPayload::read_from(data, offset)?),
+            151 => Self::ConditionData_GetFactionfriendly(ConditionData_GetFactionfriendlyPayload::read_from(data, offset)?),
+            152 => Self::ConditionData_IsFriendlyItem,
+            153 => Self::ConditionData_IsVaryableFriendly,
+            154 => Self::ConditionData_IsPetLooting,
+            155 => Self::ConditionData_CheckWaterVoxel,
+            156 => Self::ConditionData_CheckEquipItemGroup(ConditionData_CheckEquipItemGroupPayload::read_from(data, offset)?),
+            157 => Self::ConditionData_CheckLoadingStep(ConditionData_CheckLoadingStepPayload::read_from(data, offset)?),
+            158 => Self::ConditionData_CheckGimmickEventSenderName(ConditionData_CheckGimmickEventSenderNamePayload::read_from(data, offset)?),
+            159 => Self::ConditionData_CheckGetItem(ConditionData_CheckGetItemPayload::read_from(data, offset)?),
+            160 => Self::ConditionData_CheckSealActor(ConditionData_CheckSealActorPayload::read_from(data, offset)?),
+            161 => Self::ConditionData_CheckWildVehicle,
+            162 => Self::ConditionData_CheckWild,
+            163 => Self::ConditionData_CheckAIReadyToNextTimeline,
+            164 => Self::ConditionData_AITaskSetComplete,
+            165 => Self::ConditionData_CheckAttachedGimmickCount(ConditionData_CheckAttachedGimmickCountPayload::read_from(data, offset)?),
+            166 => Self::ConditionData_CheckRemoteCatchTarget(ConditionData_CheckRemoteCatchTargetPayload::read_from(data, offset)?),
+            167 => Self::ConditionData_CheckRemoteCatchTargetItemKey(ConditionData_CheckRemoteCatchTargetItemKeyPayload::read_from(data, offset)?),
+            168 => Self::ConditionData_CheckRemoteCatchable,
+            169 => Self::ConditionData_CheckGimmickEvent(ConditionData_CheckGimmickEventPayload::read_from(data, offset)?),
+            170 => Self::ConditionData_IsThrowing,
+            171 => Self::ConditionData_CheckLoadedArrow,
+            172 => Self::ConditionData_CheckRemoteCatched,
+            173 => Self::ConditionData_CheckCatched,
+            174 => Self::ConditionData_CheckStageChartDialogEnd(ConditionData_CheckStageChartDialogEndPayload::read_from(data, offset)?),
+            175 => Self::ConditionData_CheckRider(OneByteBodyPayload::read_from(data, offset)?),
+            176 => Self::ConditionData_CheckGimmickTarget(ConditionData_CheckGimmickTargetPayload::read_from(data, offset)?),
+            177 => Self::ConditionData_GetGimmickVariable(ConditionData_GetGimmickVariablePayload::read_from(data, offset)?),
+            178 => Self::ConditionData_GetRandomPercentBySpawnPositionSeed(ConditionData_GetRandomPercentBySpawnPositionSeedPayload::read_from(data, offset)?),
+            179 => Self::ConditionData_CheckStoreType(OneByteBodyPayload::read_from(data, offset)?),
+            180 => Self::ConditionData_IsExistStoreItemToSell,
+            181 => Self::ConditionData_CheckNpcFunctionType(OneByteBodyPayload::read_from(data, offset)?),
+            182 => Self::ConditionData_CheckExistPrice,
+            183 => Self::ConditionData_SubTimelineName(ConditionData_SubTimelineNamePayload::read_from(data, offset)?),
+            184 => Self::ConditionData_ExistTimeline(ConditionData_ExistTimelinePayload::read_from(data, offset)?),
+            185 => Self::ConditionData_ExistFolder(ConditionData_ExistFolderPayload::read_from(data, offset)?),
+            186 => Self::ConditionData_ExistSequencerCamera,
+            187 => Self::ConditionData_IsCutJump,
+            188 => Self::ConditionData_CheckReserveItemSlotOut(ConditionData_CheckReserveItemSlotOutPayload::read_from(data, offset)?),
+            189 => Self::ConditionData_CheckGateOpenable,
+            190 => Self::ConditionData_CheckGimmickItemKey(ConditionData_CheckGimmickItemKeyPayload::read_from(data, offset)?),
+            191 => Self::ConditionData_CheckTargetGimmickUnlockable,
+            192 => Self::ConditionData_CheckUnlockableByMission,
+            193 => Self::ConditionData_CheckMainMercenarySummoned(ConditionData_CheckMainMercenarySummonedPayload::read_from(data, offset)?),
+            194 => Self::ConditionData_CheckMainMercenaryNearToLeader(ConditionData_CheckMainMercenaryNearToLeaderPayload::read_from(data, offset)?),
+            195 => Self::ConditionData_CheckMainMercenaryHaveItemGroupPrice(ConditionData_CheckMainMercenaryHaveItemGroupPricePayload::read_from(data, offset)?),
+            196 => Self::ConditionData_CheckHaveMercenary(ConditionData_CheckHaveMercenaryPayload::read_from(data, offset)?),
+            197 => Self::ConditionData_CheckHaveVehicle(ConditionData_CheckHaveVehiclePayload::read_from(data, offset)?),
+            198 => Self::ConditionData_CheckGimmickImpulseWhereType(ConditionData_CheckGimmickImpulseWhereTypePayload::read_from(data, offset)?),
+            199 => Self::ConditionData_CheckElementalMaterialStateSuccess(ConditionData_CheckElementalMaterialStateSuccessPayload::read_from(data, offset)?),
+            200 => Self::ConditionData_CheckCurrentEquipType_OrTag199,
+            201 => Self::ConditionData_CheckBurnable,
+            202 => Self::ConditionData_CheckBreakable,
+            203 => Self::ConditionData_CheckOriginalBreakable,
+            204 => Self::ConditionData_CheckBreaked,
+            205 => Self::ConditionData_IsDockingChild,
+            206 => Self::ConditionData_CheckTriggerVolumeGroupIndex(ConditionData_CheckTriggerVolumeGroupIndexPayload::read_from(data, offset)?),
+            207 => Self::ConditionData_Weather(ConditionData_WeatherPayload::read_from(data, offset)?),
+            208 => Self::ConditionData_CheckGimmickParentLinkCount(ConditionData_CheckGimmickParentLinkCountPayload::read_from(data, offset)?),
+            209 => Self::ConditionData_CheckGimmickRemoteCatchType,
+            210 => Self::ConditionData_CheckGimmickTriggerCount(ConditionData_CheckGimmickTriggerCountPayload::read_from(data, offset)?),
+            211 => Self::ConditionData_IsFullGimmickAttachment,
+            212 => Self::ConditionData_CheckGimmickAttachmentType,
+            213 => Self::ConditionData_CheckGimmickTargetCount(ConditionData_CheckGimmickTargetCountPayload::read_from(data, offset)?),
+            214 => Self::ConditionData_CheckGimmickNonBreakTargetCount(ConditionData_CheckGimmickNonBreakTargetCountPayload::read_from(data, offset)?),
+            215 => Self::ConditionData_CheckExistStealItem(ConditionData_CheckExistStealItemPayload::read_from(data, offset)?),
+            216 => Self::ConditionData_CheckElementalMaterialType,
+            217 => Self::ConditionData_IsGimmickSealComplete,
+            218 => Self::ConditionData_IsAcquiredItem,
+            219 => Self::ConditionData_IsFullGimmickTriggerEnteredTarget(ConditionData_IsFullGimmickTriggerEnteredTargetPayload::read_from(data, offset)?),
+            220 => Self::ConditionData_CheckGimmickLinkSignalOn,
+            221 => Self::ConditionData_CheckGimmickLookAtComplete,
+            222 => Self::ConditionData_CheckAttackImpulseLevel(ConditionData_CheckAttackImpulseLevelPayload::read_from(data, offset)?),
+            223 => Self::ConditionData_CheckBreakableAttackImpulseLevel,
+            224 => Self::ConditionData_CheckSpawnReason(ConditionData_CheckSpawnReasonPayload::read_from(data, offset)?),
+            225 => Self::ConditionData_CheckFriendlyItemReward,
+            226 => Self::ConditionData_CheckNearestTriggerTargetDistance(ConditionData_CheckNearestTriggerTargetDistancePayload::read_from(data, offset)?),
+            227 => Self::ConditionData_CheckHasMagneticPartner,
+            228 => Self::ConditionData_CheckForceFieldType,
+            229 => Self::ConditionData_CheckForceFieldTargetType,
+            230 => Self::ConditionData_CheckExistDropItem,
+            231 => Self::ConditionData_CheckGlobalStageSequencerExit(ConditionData_CheckGlobalStageSequencerExitPayload::read_from(data, offset)?),
+            232 => Self::ConditionData_CheckSealable(ConditionData_CheckSealablePayload::read_from(data, offset)?),
+            233 => Self::ConditionData_CheckTargetSealable,
+            234 => Self::ConditionData_CheckSealState,
+            235 => Self::ConditionData_HasSealDropableItem,
+            236 => Self::ConditionData_CheckExistGimmickPoint(ConditionData_CheckExistGimmickPointPayload::read_from(data, offset)?),
+            237 => Self::ConditionData_CheckGimmickOnTime,
+            238 => Self::ConditionData_CheckLoginStep_OrTag237,
+            239 => Self::ConditionData_CheckUseGimmickOnTime,
+            240 => Self::ConditionData_GetCombinationRootVariable(ConditionData_GetCombinationRootVariablePayload::read_from(data, offset)?),
+            241 => Self::ConditionData_IsMagnetEnabled,
+            242 => Self::ConditionData_CanDisassemble,
+            243 => Self::ConditionData_CheckOriginalGimmickLength(ConditionData_CheckOriginalGimmickLengthPayload::read_from(data, offset)?),
+            244 => Self::ConditionData_CheckGimmickPhysicsVolumeLength(ConditionData_CheckGimmickPhysicsVolumeLengthPayload::read_from(data, offset)?),
+            245 => Self::ConditionData_CheckInStealthStage,
+            246 => Self::ConditionData_IsInstantlyDeadable,
+            247 => Self::ConditionData_IsCrimeTarget,
+            248 => Self::ConditionData_CheckLookAtSunDirection,
+            249 => Self::ConditionData_CheckHirable,
+            250 => Self::ConditionData_CheckBuffTag(ConditionData_CheckBuffTagPayload::read_from(data, offset)?),
+            251 => Self::ConditionData_CheckRidingVehicleType(ConditionData_CheckRidingVehicleTypePayload::read_from(data, offset)?),
+            252 => Self::ConditionData_CheckRidingVehicleKey(ConditionData_CheckRidingVehicleKeyPayload::read_from(data, offset)?),
+            253 => Self::ConditionData_CheckRidingVehicleKeyList(ConditionData_CheckRidingVehicleKeyListPayload::read_from(data, offset)?),
+            254 => Self::ConditionData_CheckThreatReward(OneByteBodyPayload::read_from(data, offset)?),
+            255 => Self::ConditionData_IsCrossHairTarget,
+            256 => Self::ConditionData_IsAiJumpClimbTarget,
+            257 => Self::ConditionData_Macro(ConditionData_MacroPayload::read_from(data, offset)?),
+            258 => Self::ConditionData_GetAngularVelocity(ConditionData_GetAngularVelocityPayload::read_from(data, offset)?),
+            259 => Self::ConditionData_IsChildGimmick,
+            260 => Self::ConditionData_CheckPlayerCameraLookAtAngle(ConditionData_CheckPlayerCameraLookAtAnglePayload::read_from(data, offset)?),
+            261 => Self::ConditionData_CheckPlayerCameraFocusActorCovered,
+            262 => Self::ConditionData_CheckDamageElementalType(ConditionData_CheckDamageElementalTypePayload::read_from(data, offset)?),
+            263 => Self::ConditionData_IsRidingVehicle,
+            264 => Self::ConditionData_CharacterTier(OneByteBodyPayload::read_from(data, offset)?),
+            265 => Self::ConditionData_CheckEquipTargetItemActor,
+            266 => Self::ConditionData_GetFactionNodeState(ConditionData_GetFactionNodeStatePayload::read_from(data, offset)?),
+            267 => Self::ConditionData_GetCurrentFactionNodeState(ConditionData_GetCurrentFactionNodeStatePayload::read_from(data, offset)?),
+            268 => Self::ConditionData_IsFactionNodeKnockDown(ConditionData_IsFactionNodeKnockDownPayload::read_from(data, offset)?),
+            269 => Self::ConditionData_GetFactionNodeBlockSubType(ConditionData_GetFactionNodeBlockSubTypePayload::read_from(data, offset)?),
+            270 => Self::ConditionData_GetFactionResource(ConditionData_GetFactionResourcePayload::read_from(data, offset)?),
+            271 => Self::ConditionData_IsFactionNodeMissionGaugeEnable(ConditionData_IsFactionNodeMissionGaugeEnablePayload::read_from(data, offset)?),
+            272 => Self::ConditionData_CheckCharacterGroupKey(ConditionData_CheckCharacterGroupKeyPayload::read_from(data, offset)?),
+            273 => Self::ConditionData_GameEventParam(ConditionData_GameEventParamPayload::read_from(data, offset)?),
+            274 => Self::ConditionData_CheckFactionRelation(ConditionData_CheckFactionRelationPayload::read_from(data, offset)?),
+            275 => Self::ConditionData_CheckUsableStore,
+            276 => Self::ConditionData_CheckRide(ConditionData_CheckRidePayload::read_from(data, offset)?),
+            277 => Self::ConditionData_DockingToCurrentVehicle,
+            278 => Self::ConditionData_CheckImpulseDirection(ConditionData_CheckImpulseDirectionPayload::read_from(data, offset)?),
+            279 => Self::ConditionData_GetGimmickRotationFromSpawn(ConditionData_GetGimmickRotationFromSpawnPayload::read_from(data, offset)?),
+            280 => Self::ConditionData_SkillTreeNodeLearnable(ConditionData_SkillTreeNodeLearnablePayload::read_from(data, offset)?),
+            281 => Self::ConditionData_CheckFactionKey(ConditionData_CheckFactionKeyPayload::read_from(data, offset)?),
+            282 => Self::ConditionData_CheckFactionCategory,
+            283 => Self::ConditionData_CheckConquerorFaction(ConditionData_CheckConquerorFactionPayload::read_from(data, offset)?),
+            284 => Self::ConditionData_CheckPositionOwnerFaction(ConditionData_CheckPositionOwnerFactionPayload::read_from(data, offset)?),
+            285 => Self::ConditionData_CheckCharacterItemSocket(ConditionData_CheckCharacterItemSocketPayload::read_from(data, offset)?),
+            286 => Self::ConditionData_CheckGimmickItemSocket,
+            287 => Self::ConditionData_CheckCurrentEquipType_OrTag286(TwoU32BodyPayload::read_from(data, offset)?),
+            288 => Self::ConditionData_IsInSpecialModeStage(OneU32BodyPayload::read_from(data, offset)?),
+            289 => Self::ConditionData_IsSpawnedOnPlatform,
+            290 => Self::ConditionData_GetInventoryWeightLevel(ConditionData_GetInventoryWeightLevelPayload::read_from(data, offset)?),
+            291 => Self::ConditionData_CheckReserveSlot(ConditionData_CheckReserveSlotPayload::read_from(data, offset)?),
+            292 => Self::ConditionData_CheckCanSupplyToRoyal(ConditionData_CheckCanSupplyToRoyalPayload::read_from(data, offset)?),
+            293 => Self::ConditionData_CheckRoyalSupplyOpen(ConditionData_CheckRoyalSupplyOpenPayload::read_from(data, offset)?),
+            294 => Self::ConditionData_CheckDockingWeaponOut,
+            295 => Self::ConditionData_GetEquipGimmickItemUsableCount(ConditionData_GetEquipGimmickItemUsableCountPayload::read_from(data, offset)?),
+            296 => Self::ConditionData_CurrentStateEquipItemUseSuccess,
+            297 => Self::ConditionData_IsEquipGimmickItemBroken,
+            298 => Self::ConditionData_CheckGimmickTargetHackable(ConditionData_CheckGimmickTargetHackablePayload::read_from(data, offset)?),
+            299 => Self::ConditionData_IsHackable(ConditionData_IsHackablePayload::read_from(data, offset)?),
+            300 => Self::ConditionData_CheckDockingParentDead,
+            301 => Self::ConditionData_CheckAttackName(OneU32BodyPayload::read_from(data, offset)?),
+            302 => Self::ConditionData_CheckAttackFromType(ConditionData_CheckAttackFromTypePayload::read_from(data, offset)?),
+            303 => Self::ConditionData_CheckGimmickAngleToTarget(ConditionData_CheckGimmickAngleToTargetPayload::read_from(data, offset)?),
+            304 => Self::ConditionData_CheckSpawnPositionRegion(ConditionData_CheckSpawnPositionRegionPayload::read_from(data, offset)?),
+            305 => Self::ConditionData_IsGamePlayLevelGimmick(ConditionData_IsGamePlayLevelGimmickPayload::read_from(data, offset)?),
+            306 => Self::ConditionData_CheckCompleteStageGimmick,
+            307 => Self::ConditionData_CheckCompleteLevelGimmick(ConditionData_CheckCompleteLevelGimmickPayload::read_from(data, offset)?),
+            308 => Self::ConditionData_IsRootGimmickLocked,
+            309 => Self::ConditionData_CheckShareValue(ConditionData_CheckShareValuePayload::read_from(data, offset)?),
+            310 => Self::ConditionData_CheckLoginStep_OrTag309,
+            311 => Self::ConditionData_CheckGimmickknowledgeLearned,
+            312 => Self::ConditionData_IsEquipDockingGimmick,
+            313 => Self::ConditionData_CheckPipeGimmickHaveExit,
+            314 => Self::ConditionData_IsLevelGimmickControlByMission,
+            315 => Self::ConditionData_IsLevelGimmickMissionComplete,
+            316 => Self::ConditionData_GetCurrentSubLevel(ConditionData_GetCurrentSubLevelPayload::read_from(data, offset)?),
+            317 => Self::ConditionData_IsHyosiMercenary,
+            318 => Self::ConditionData_CheckLoginStep_OrTag317,
+            319 => Self::ConditionData_CheckLoginStep_OrTag318,
+            320 => Self::ConditionData_DockingChildTagCount(ConditionData_DockingChildTagCountPayload::read_from(data, offset)?),
+            321 => Self::ConditionData_HasBagDocking,
+            322 => Self::ConditionData_IsSpecialModeStartComplete,
+            323 => Self::ConditionData_IsInteractable(OneByteBodyPayload::read_from(data, offset)?),
+            324 => Self::ConditionData_CheckVehicleType(ConditionData_CheckVehicleTypePayload::read_from(data, offset)?),
+            325 => Self::ConditionData_IsVehicleLinked,
+            326 => Self::ConditionData_IsSpawnByLinkedVehicle,
+            327 => Self::ConditionData_LostActor(ConditionData_LostActorPayload::read_from(data, offset)?),
+            328 => Self::ConditionData_LostGimmick(ConditionData_LostGimmickPayload::read_from(data, offset)?),
+            329 => Self::ConditionData_InteractableSpeaker,
+            330 => Self::ConditionData_CheckMiseensceneScheduleIndex,
+            331 => Self::ConditionData_CheckFlip,
+            332 => Self::ConditionData_GetMinigameSeed(ConditionData_GetMinigameSeedPayload::read_from(data, offset)?),
+            333 => Self::ConditionData_CheckMainMercenaryDead,
+            334 => Self::ConditionData_HasAttachableGimmick,
+            335 => Self::ConditionData_IsDockingGimmickTerrainRegionSummonable(ConditionData_IsDockingGimmickTerrainRegionSummonablePayload::read_from(data, offset)?),
+            336 => Self::ConditionData_IsGimmickHousingMode,
+            337 => Self::ConditionData_IsInHousingRegion,
+            338 => Self::ConditionData_IsGimmickPlacedByHousing,
+            339 => Self::ConditionData_CheckDropSetDropable(ConditionData_CheckDropSetDropablePayload::read_from(data, offset)?),
+            340 => Self::ConditionData_GetFactionResearchProgress(ConditionData_GetFactionResearchProgressPayload::read_from(data, offset)?),
+            341 => Self::ConditionData_HasLinkedDecoGimmick,
+            342 => Self::ConditionData_IsClientOnlyActor,
+            343 => Self::ConditionData_HasQuestDialog(ConditionData_HasQuestDialogPayload::read_from(data, offset)?),
+            344 => Self::ConditionData_CheckQuestDialogCategory(OneByteBodyPayload::read_from(data, offset)?),
+            345 => Self::ConditionData_IsSpeakingQuestDialog,
+            346 => Self::ConditionData_CheckTarget(ConditionData_CheckTargetPayload::read_from(data, offset)?),
+            347 => Self::ConditionData_CheckHaveLoadingTargetStage_OrTag346,
+            348 => Self::ConditionData_GetFertilizerAmountPercent(ConditionData_GetFertilizerAmountPercentPayload::read_from(data, offset)?),
+            349 => Self::ConditionData_IsDetectModeShowEnemy,
+            350 => Self::ConditionData_CheckHireMercenary,
+            351 => Self::ConditionData_IsExistSoldItemToStore,
+            352 => Self::ConditionData_CheckCurrentEquipType_OrTag351(OneByteBodyPayload::read_from(data, offset)?),
+            353 => Self::ConditionData_GetCampDonatedItemCount(ConditionData_GetCampDonatedItemCountPayload::read_from(data, offset)?),
+            354 => Self::ConditionData_IsGimmick,
+            355 => Self::ConditionData_IsCharacter(OneByteBodyPayload::read_from(data, offset)?),
+            356 => Self::ConditionData_IsItem,
+            357 => Self::ConditionData_IsTargetOfOperatorDockingGimmick(ConditionData_IsTargetOfOperatorDockingGimmickPayload::read_from(data, offset)?),
+            358 => Self::ConditionData_CheckMercenaryOccupationState,
+            359 => Self::ConditionData_CheckMercenaryType(OneByteBodyPayload::read_from(data, offset)?),
+            360 => Self::ConditionData_IsPassableState,
+            361 => Self::ConditionData_CheckTargetDropListToPushInventory(OneByteBodyPayload::read_from(data, offset)?),
+            362 => Self::ConditionData_IsMiniGameBanned,
+            363 => Self::ConditionData_IsInGrassField,
+            364 => Self::ConditionData_IsCoveredBySnow,
+            365 => Self::ConditionData_IsInRegionTag(ConditionData_IsInRegionTagPayload::read_from(data, offset)?),
+            366 => Self::ConditionData_IsGround,
+            367 => Self::ConditionData_CheckCatchTarget,
+            368 => Self::ConditionData_IsFarmAnimal,
+            369 => Self::ConditionData_CheckCanTimeWrap,
+            370 => Self::ConditionData_IsInGlobalGameEventArea(ConditionData_IsInGlobalGameEventAreaPayload::read_from(data, offset)?),
+            371 => Self::ConditionData_CheckOwnershipState(OneByteBodyPayload::read_from(data, offset)?),
+            372 => Self::ConditionData_IsDokcingParentHiredMercenary,
+            373 => Self::ConditionData_CheckCurrentGlobalGameEvent(ConditionData_CheckCurrentGlobalGameEventPayload::read_from(data, offset)?),
+            374 => Self::ConditionData_CheckGamePlayVariable(ConditionData_CheckGamePlayVariablePayload::read_from(data, offset)?),
+            375 => Self::ConditionData_IsSpawnOwner(OneByteBodyPayload::read_from(data, offset)?),
+            376 => Self::ConditionData_IsLiftable,
+            377 => Self::ConditionData_IsOwnerPlayer,
+            378 => Self::ConditionData_IsAbleToFeed,
+            379 => Self::ConditionData_GetInventorySlotFillPercent(ConditionData_GetInventorySlotFillPercentPayload::read_from(data, offset)?),
+            380 => Self::ConditionData_CheckMiniGameEntranceFee,
+            381 => Self::ConditionData_CheckUnknownMeditationKnowledge,
+            382 => Self::ConditionData_MiniGameWin(ConditionData_MiniGameWinPayload::read_from(data, offset)?),
+            383 => Self::ConditionData_MiniGameRound(ConditionData_MiniGameRoundPayload::read_from(data, offset)?),
+            384 => Self::ConditionData_MiniGameWinningStreak(ConditionData_MiniGameWinningStreakPayload::read_from(data, offset)?),
+            385 => Self::ConditionData_IsVehicleAllowedInEnteredRegion,
+            386 => Self::ConditionData_CheckBlockedAbility,
+            387 => Self::ConditionData_CheckMainMercenaryBlockedAbility(ConditionData_CheckMainMercenaryBlockedAbilityPayload::read_from(data, offset)?),
+            388 => Self::ConditionData_BlockByExclusiveStage,
+            389 => Self::ConditionData_CheckNotPlayableState,
+            390 => Self::ConditionData_GetNodeCombatPower(ConditionData_GetNodeCombatPowerPayload::read_from(data, offset)?),
+            391 => Self::ConditionData_ReserveSlotItemCount(ConditionData_ReserveSlotItemCountPayload::read_from(data, offset)?),
+            392 => Self::ConditionData_PuzzleSavePresetApplied,
+            393 => Self::ConditionData_IsStableForInteraction,
+            394 => Self::ConditionData_CheckAccompanyType(OneByteBodyPayload::read_from(data, offset)?),
+            395 => Self::ConditionData_CheckFactionWantedLevel(ConditionData_CheckFactionWantedLevelPayload::read_from(data, offset)?),
+            396 => Self::ConditionData_CheckVehicleAllowableHeight,
+            397 => Self::ConditionData_CheckMercenaryCallCooltime(ConditionData_CheckMercenaryCallCooltimePayload::read_from(data, offset)?),
+            398 => Self::ConditionData_IsMiniGamePlayable,
+            399 => Self::ConditionData_IsAimingHitLimitAttackRegion,
+            400 => Self::ConditionData_CheckInventoryMaxSlotCount(ConditionData_CheckInventoryMaxSlotCountPayload::read_from(data, offset)?),
+            401 => Self::ConditionData_CheckInteractingWithOwnedObject,
+            402 => Self::ConditionData_GetDifficultyOption(ConditionData_GetDifficultyOptionPayload::read_from(data, offset)?),
+            403 => Self::ConditionData_GetMaxWantedLevel(ConditionData_GetMaxWantedLevelPayload::read_from(data, offset)?),
+            404 => Self::ConditionData_CheckPlayerHouse(ConditionData_CheckPlayerHousePayload::read_from(data, offset)?),
+            405 => Self::ConditionData_CheckActivatedHousingRegion(ConditionData_CheckActivatedHousingRegionPayload::read_from(data, offset)?),
             _ => return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unknown ConditionData disc: {}", disc))),
         })
     }
@@ -4531,7 +4531,7 @@ impl<'a> ConditionDataVariant<'a> {
             Self::ConditionData_CheckPositionOwnerFaction(p) => p.write_to(w),
             Self::ConditionData_CheckCharacterItemSocket(p) => p.write_to(w),
             Self::ConditionData_CheckGimmickItemSocket => Ok(()),
-            Self::ConditionData_CheckCurrentEquipType_OrTag286 => Ok(()),
+            Self::ConditionData_CheckCurrentEquipType_OrTag286(p) => p.write_to(w),
             Self::ConditionData_IsInSpecialModeStage(p) => p.write_to(w),
             Self::ConditionData_IsSpawnedOnPlatform => Ok(()),
             Self::ConditionData_GetInventoryWeightLevel(p) => p.write_to(w),
@@ -4710,7 +4710,14 @@ impl<'a> ConditionDataOptionData<'a> {
 /// captured 2026-04-30):
 ///
 /// Current state — `n=0` Raw entries on interaction_info (100%
-/// decoded, 363 of 363); condition_info 8918/8934 = 99.82%.
+/// decoded, 363 of 363); condition_info 8920/8934 = 99.84%.
+///
+/// Remaining 14 Raw entries are confirmed source-data truncation
+/// (not parser bugs): 7×272 (sub_tag bodies cut short), 3×372
+/// (blob_len=4, u16 body needs 2 but only 1 byte remains), 1×9
+/// (blob too short for u64), 1×31 (truncated), 1×286 (BinaryOpB
+/// right-child absent), 1×287 (3 bytes for u32 body). Unfixable
+/// without a corrected source dump.
 ///
 /// Anti-disasm-family tags 54 and 214 were resolved via the **Mac
 /// binary** (CrimsonDesert_Steam.app), where the vtables are not
@@ -4739,6 +4746,13 @@ impl<'a> ConditionDataOptionData<'a> {
 ///   tag 370 (CheckOwnershipState) — 1-byte body, KEPT in skip-list via `41bc97f`
 ///   tag 393 (CheckAccompanyType)— added 1-byte body via `d91d961`
 ///   tag 19/27 (CheckGroggy/IsFocusActor) — kept as unit variant
+///   tag 221 (CheckAttackImpulseLevel) — added to Class A skip-list;
+///                                  vtable[19]=0x1402D3A80 (Win-IDA)
+///   tag 261 (CheckDamageElementalType) — added to Class A skip-list;
+///                                  vtable[19]=0x1402D3A80 (Win-IDA)
+///   tag 286 (CheckCurrentEquipType_OrTag286) — upgraded unit →
+///                                  TwoU32BodyPayload; vtable[16]
+///                                  0x141C98F40 reads 2×u32 (Win-IDA)
 ///
 /// Verification template for any next promote: read vtable[16] and
 /// vtable[19] from the matching `??_7ConditionData_<Name>@pa@@6B@`
@@ -4773,13 +4787,15 @@ fn variant_skips_option_block(tag: u16) -> bool {
         //   tag 256: ConditionData_Macro               @ 0x144ce2f88
         //   tag 272: ConditionData_GameEventParam      @ 0x144ce4cb0
         //   tag 300: vftable @ off_144CD3778
-        2 | 81 | 126 | 256 | 272 | 300 |
+        2 | 81 | 126 | 222 | 257 | 262 | 273 | 301 |
         // Class A (continuing) — same source, vtable[19] = no-op:
-        306 | 401 |
+        //   tag 221: ConditionData_CheckAttackImpulseLevel  @ 0x144ce5268
+        //   tag 261: ConditionData_CheckDamageElementalType @ 0x144ce4080
+        307 | 402 |
         // Class B — vtable[19] = thunk into anti-disassembly runtime
         // (sub_14F0D2550 / sub_14F24B730). Byte-math verified: vanilla
         // `case(1)+tag(2)+body+footer(3)` matches with zero option_block.
-        79 | 195 |
+        79 | 196 |
         // Class C — empirical add via LAST_ATTEMPTED_TAG diagnostic on
         // interaction_info. vtable[19] = `0x1413B89E0` (thunk in
         // sub_14139AE80, non-decompilable). Verified Win-IDA this
